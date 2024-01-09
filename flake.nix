@@ -19,7 +19,7 @@
     };
 
     kapi-vim = {
-      url = "github:potsrevennil/kapi-vim";
+      url = "github:potsrevennil/kapi-vim?ref=refs/tags/0.1.0";
     };
   };
   outputs =

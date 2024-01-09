@@ -5,39 +5,20 @@
     stateVersion = "24.05";
     packages = with pkgs; [
       kapi-vim.packages.${system}.default
+      kapi-vim.packages.${system}.lsp
       tmux
       curl
-      tokei
 
       nixpkgs-fmt
       nixd
-
-      lua-language-server
-
-      shfmt
-      shellcheck
-
-      taplo
-      yaml-language-server
-
-      codespell
-
-      clang-tools
-
-      rustup
 
       docker
       docker-buildx
 
       cmake
       pkg-config
-      llvmPackages.clang
 
-      go
-      gopls
-      gotools
-      golangci-lint
-      govulncheck
+      tcpdump
     ];
   };
 
@@ -65,11 +46,47 @@
 
     git.enable = true;
 
+    alacritty = {
+      enable = true;
+    };
+
+    tmux = {
+      enable = true;
+      shell = "${pkgs.zsh}/bin/zsh";
+      terminal = "xterm-256color";
+      mouse = true;
+      keyMode = "vi";
+      newSession = true;
+      plugins = with pkgs.tmuxPlugins; [
+        sensible
+        resurrect
+        { plugin = continuum; extraConfig = "set -g @continuum-restore 'off'"; }
+        dracula
+      ];
+      extraConfig = ''
+        set -wg mode-style bg=#c6c8d1,fg=#33374c
+        set -g pane-border-status top
+
+        bind '"' split-window -c "#{pane_current_path}"
+        bind % split-window -h -c "#{pane_current_path}"
+        bind c new-window -c "#{pane_current_path}"
+        bind-key & kill-window
+        bind-key x kill-pane
+
+        set -s set-clipboard external
+        bind -Tcopy-mode MouseDragEnd1Pane send -X copy-selection-no-clear 'xsel -i'
+      '';
+    };
+
     direnv = {
       enable = true;
       enableBashIntegration = true;
       enableZshIntegration = true;
       nix-direnv.enable = true;
     };
+  };
+
+  home.file = {
+    ".config/alacritty/alacritty.yml".source = ./alacritty.yml;
   };
 }

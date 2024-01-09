@@ -20,5 +20,14 @@
     };
     dock.autohide = true;
   };
-  homebrew.enable = true;
+  fonts = {
+    fontDir.enable = true;
+    fonts = with pkgs; [ (nerdfonts.override { fonts = [ "Agave" ]; }) ];
+  };
+  homebrew = {
+    enable = true;
+    caskArgs.no_quarantine = true;
+    global.brewfile = true;
+    casks = [ "raycast" ];
+  };
 }

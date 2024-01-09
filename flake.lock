@@ -87,15 +87,16 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1704704757,
-        "narHash": "sha256-3Em5lieMUTlZun2HxiM8mmJF//aA4y0SoqlXQO4iOl4=",
+        "lastModified": 1704776977,
+        "narHash": "sha256-vjWb5y0pPGyQUXIPJzgnfxOuZU+8SxLjDsrU7x6wdwE=",
         "owner": "potsrevennil",
         "repo": "kapi-vim",
-        "rev": "7255ad2af2dff4222f0a6dcc64281bb3828ed61e",
+        "rev": "ec44714a274468d23bd242e99028fb31c38e1142",
         "type": "github"
       },
       "original": {
         "owner": "potsrevennil",
+        "ref": "refs/tags/0.1.0",
         "repo": "kapi-vim",
         "type": "github"
       }
