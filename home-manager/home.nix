@@ -79,6 +79,11 @@
       '';
     };
 
+    zellij = {
+      enable = true;
+      enableZshIntegration = true;
+    };
+
     direnv = {
       enable = true;
       enableBashIntegration = true;
@@ -89,5 +94,7 @@
 
   home.file = {
     ".config/alacritty/alacritty.yml".source = ./alacritty.yml;
+    ".config/zellij/config.kdl".source = ./zellij.kdl;
+    ".config/zellij/layouts/default.kdl".source = ./zellij-default-layout.kdl;
   };
 }
