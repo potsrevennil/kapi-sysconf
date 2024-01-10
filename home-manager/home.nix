@@ -19,6 +19,7 @@
       pkg-config
 
       tcpdump
+      wireguard-tools
     ];
   };
 
