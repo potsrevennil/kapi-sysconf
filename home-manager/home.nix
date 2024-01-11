@@ -6,8 +6,6 @@
     packages = with pkgs; [
       kapi-vim.packages.${system}.default
       kapi-vim.packages.${system}.lsp
-      tmux
-      curl
 
       nixpkgs-fmt
       nixd
@@ -18,8 +16,19 @@
       cmake
       pkg-config
 
+      # networking tools
       tcpdump
       wireguard-tools
+      curl
+
+      # IaaS tools
+      awscli2
+      gh
+
+      # tools stack
+      git
+      tmux
+      tree
     ];
   };
 
@@ -44,8 +53,6 @@
         theme = "random";
       };
     };
-
-    git.enable = true;
 
     alacritty = {
       enable = true;
