@@ -7,6 +7,9 @@
       kapi-vim.packages.${system}.default
       kapi-vim.packages.${system}.lsp
 
+      direnv
+      nix-direnv
+
       nixpkgs-fmt
       nixd
 
@@ -19,6 +22,7 @@
       # networking tools
       tcpdump
       wireguard-tools
+      wireguard-go
       curl
 
       # IaaS tools
@@ -27,6 +31,7 @@
 
       # tools stack
       git
+      pre-commit
       tmux
       tree
     ];
