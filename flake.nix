@@ -35,7 +35,7 @@
           system = "aarch64-darwin";
           pkgs = import nixpkgs { system = "aarch64-darwin"; };
           modules = [
-            ./configuration.nix
+            ./darwin.nix
             home-manager.darwinModules.home-manager
             {
               users.users.thing-hanlim = {
