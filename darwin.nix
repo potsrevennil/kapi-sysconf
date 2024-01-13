@@ -1,5 +1,7 @@
 { pkgs, lib, ... }:
 {
+  nix.settings.auto-optimise-store = true;
+
   programs.zsh.enable = true;
   environment.shells = [ pkgs.bash pkgs.zsh ];
   environment.loginShell = pkgs.zsh;
