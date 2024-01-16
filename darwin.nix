@@ -5,6 +5,9 @@
   programs.zsh.enable = true;
   environment.shells = [ pkgs.bash pkgs.zsh ];
   environment.loginShell = pkgs.zsh;
+  environment.variables = {
+    EDITOR = "vim";
+  };
   nix.extraOptions = ''
     experimental-features = nix-command flakes
   '';
