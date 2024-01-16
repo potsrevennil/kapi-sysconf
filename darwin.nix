@@ -34,5 +34,6 @@
     caskArgs.no_quarantine = true;
     global.brewfile = true;
     casks = [ "raycast" ];
+    onActivation.cleanup = "zap";
   };
 }
