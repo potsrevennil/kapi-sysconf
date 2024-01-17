@@ -1,6 +1,11 @@
 { config, pkgs, kapi-vim, ... }:
 
 {
+  nixpkgs.config = {
+    allowUnfree = true;
+    allowUnfreePredicate = (_: true);
+  };
+
   home = {
     stateVersion = "24.05";
     packages = with pkgs; [
@@ -34,6 +39,9 @@
       pre-commit
       tmux
       tree
+
+      _1password-gui
+      _1password
     ];
   };
 
