@@ -87,8 +87,8 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1705290476,
-        "narHash": "sha256-096Qg0iOahGKTtDt9/fAfa/Q3cDxL9Xv6an3u8hs+Z0=",
+        "lastModified": 1708398100,
+        "narHash": "sha256-EmcSq5i0EG0XCdqneklgg4t8n2yUd8wfzswx1Cl8Xfw=",
         "owner": "potsrevennil",
         "repo": "kapi-vim",
         "rev": "1bae4de6a2c52cb69b4c3ecfe4c2d79ea7072bbb",

@@ -110,6 +110,18 @@
       enableZshIntegration = true;
       nix-direnv.enable = true;
     };
+
+    emacs = {
+      enable = true;
+      extraPackages = epkgs: with epkgs; [
+        lsp-mode
+        evil
+      ];
+      extraConfig = ''
+        (require 'evil)
+        (evil-mode 1)
+      '';
+    };
   };
 
   home.file = {
