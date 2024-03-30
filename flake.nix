@@ -19,37 +19,55 @@
     };
 
     kapi-vim = {
-      url = "github:potsrevennil/kapi-vim?ref=refs/tags/0.5.1";
+      url = "github:potsrevennil/kapi-vim?ref=refs/tags/0.7.0";
     };
   };
-  outputs =
-    inputs @ { nixpkgs
-    , home-manager
-    , flake-parts
-    , darwin
-    , kapi-vim
-    , ...
-    }: {
-      darwinConfigurations.Thing-hans-MacBook-Pro =
-        darwin.lib.darwinSystem {
-          system = "aarch64-darwin";
-          pkgs = import nixpkgs { system = "aarch64-darwin"; };
-          modules = [
-            ./darwin.nix
-            home-manager.darwinModules.home-manager
-            {
-              users.users.thing-hanlim = {
-                name = "thing-hanlim";
-                home = "/Users/thing-hanlim";
-              };
-              home-manager = {
-                useGlobalPkgs = false;
-                useUserPackages = true;
-                extraSpecialArgs = { inherit kapi-vim; };
-                users.thing-hanlim = import ./home-manager/home.nix;
-              };
-            }
+  outputs = inputs@{ flake-parts, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
+    imports = [ ./modules ./hosts ./users ];
+    systems = [ "aarch64-darwin" "x86_64-darwin" ];
+    perSystem = { pkgs, lib, ... }: {
+      _module.args = {
+        nix = {
+          extraOptions = ''
+            experimental-features = nix-command flakes
+          '';
+
+          settings = {
+            auto-optimise-store = true;
+            trusted-users = [
+              "root"
+              "thing-hanlim"
+            ];
+          };
+        };
+        nixpkgs = {
+          config = lib.mkForce {
+            allowBroken = true;
+            allowUnfree = true;
+          };
+
+          overlays = lib.mkForce [
+            inputs.kapi-vim.overlays.default
           ];
         };
+      };
+
+      devShells.default = with pkgs; mkShellNoCC {
+        packages = [
+          direnv
+          nix-direnv
+
+          nixpkgs-fmt
+          nixd
+          deadnix
+          statix
+        ];
+
+        shellHook = ''
+          export PATH=$PWD/bin:$PATH
+        '';
+      };
+
     };
+  };
 }

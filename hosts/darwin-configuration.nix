@@ -1,24 +1,5 @@
-{ pkgs, lib, ... }:
+{ pkgs, ... }:
 {
-  nix = {
-    extraOptions = ''
-      experimental-features = nix-command flakes
-    '';
-
-    settings = {
-      auto-optimise-store = true;
-      trusted-users = [
-        "root"
-        "thing-hanlim"
-      ];
-    };
-  };
-
-  nixpkgs.config = {
-    allowUnfree = true;
-    allowBroken = true;
-  };
-
   programs.zsh.enable = true;
 
   environment = {
@@ -27,15 +8,11 @@
     variables = {
       EDITOR = "vim";
     };
-    systemPackages = with pkgs; [
-      home-manager
-    ];
   };
 
   services.nix-daemon.enable = true;
 
   system = {
-    stateVersion = 4;
     defaults = {
       finder = {
         AppleShowAllExtensions = true;

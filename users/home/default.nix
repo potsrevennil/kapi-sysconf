@@ -1,42 +1,36 @@
-{ config, pkgs, kapi-vim, ... }:
+{ pkgs, ... }:
 
 {
-  nixpkgs.config = {
-    allowUnfree = true;
-    allowUnfreePredicate = (_: true);
-  };
-
   home = {
-    stateVersion = "24.05";
-    packages = with pkgs; [
-      kapi-vim.packages.${system}.default
-      kapi-vim.packages.${system}.lsp
+    packages = builtins.attrValues {
+      inherit (pkgs)
+        kapi-vim
+        kapi-vim-lsp
+        nixpkgs-fmt
+        nixd
 
-      nixpkgs-fmt
-      nixd
+        docker
+        docker-buildx
 
-      docker
-      docker-buildx
+        cmake
+        pkg-config
 
-      cmake
-      pkg-config
+        # networking tools
+        tcpdump
+        wireguard-tools
+        wireguard-go
+        curl
 
-      # networking tools
-      tcpdump
-      wireguard-tools
-      wireguard-go
-      curl
+        # IaaS tools
+        awscli2
+        gh
 
-      # IaaS tools
-      awscli2
-      gh
-
-      # tools stack
-      git
-      pre-commit
-      tmux
-      tree
-    ];
+        # tools stack
+        git
+        pre-commit
+        tmux
+        tree;
+    };
   };
 
   programs = {
