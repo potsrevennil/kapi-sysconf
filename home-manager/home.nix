@@ -12,9 +12,6 @@
       kapi-vim.packages.${system}.default
       kapi-vim.packages.${system}.lsp
 
-      direnv
-      nix-direnv
-
       nixpkgs-fmt
       nixd
 
@@ -39,9 +36,6 @@
       pre-commit
       tmux
       tree
-
-      _1password-gui
-      _1password
     ];
   };
 
