@@ -36,7 +36,11 @@
     enable = true;
     caskArgs.no_quarantine = true;
     global.brewfile = true;
-    casks = [ "raycast" ];
+    casks = [
+      "raycast"
+      "arc"
+      "1password"
+    ];
     onActivation.cleanup = "zap";
   };
 }

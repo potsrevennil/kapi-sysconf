@@ -24,6 +24,7 @@
         # IaaS tools
         awscli2
         gh
+        slack
 
         # tools stack
         git
