@@ -14,8 +14,14 @@
 
   system = {
     defaults = {
+      SoftwareUpdate.AutomaticallyInstallMacOSUpdates = true;
       finder = {
         AppleShowAllExtensions = true;
+        AppleShowAllFiles = true;
+        FXPreferredViewStyle = "iconv";
+        QuitMenuItem = true;
+        ShowPathbar = true;
+        ShowStatusBar = true;
         _FXShowPosixPathInTitle = true;
       };
       NSGlobalDomain = {
@@ -23,7 +29,17 @@
         InitialKeyRepeat = 14;
         KeyRepeat = 2;
       };
-      dock.autohide = true;
+      dock = {
+        autohide = true;
+        show-recents = false;
+      };
+      menuExtraClock = {
+        Show24Hour = false;
+        ShowAMPM = true;
+        ShowDate = 0;
+        ShowDayOfMonth = true;
+        ShowDayOfWeek = true;
+      };
     };
   };
 
