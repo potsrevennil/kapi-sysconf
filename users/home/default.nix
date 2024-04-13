@@ -45,14 +45,23 @@
     zsh = {
       enable = true;
       autocd = true;
-      loginExtra = "export SHELL=$(which zsh)";
-      logoutExtra = "export SHELL=";
-      syntaxHighlighting.enable = true;
+      history = {
+        expireDuplicatesFirst = true;
+        ignoreAllDups = true;
+        share = false;
+      };
+      syntaxHighlighting = {
+        enable = true;
+        highlighters = [ "main" "brackets" "pattern" "regexp" "cursor" "root" "line" ];
+      };
       enableAutosuggestions = true;
       oh-my-zsh = {
         enable = true;
         plugins = [ "sudo" "git" "colored-man-pages" "tmux" ];
         theme = "random";
+        extraConfig = ''
+          ZSH_THEME_RANDOM_IGNORED=(smt humza)
+        '';
       };
     };
 
