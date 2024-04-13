@@ -4,6 +4,8 @@
   home = {
     packages = builtins.attrValues {
       inherit (pkgs)
+        direnv
+
         kapi-vim
         kapi-vim-lsp
         nixpkgs-fmt
@@ -55,13 +57,13 @@
         highlighters = [ "main" "brackets" "pattern" "regexp" "cursor" "root" "line" ];
       };
       enableAutosuggestions = true;
+      initExtra = ''
+        source $HOME/.config/zsh/zshrc
+      '';
       oh-my-zsh = {
         enable = true;
         plugins = [ "sudo" "git" "colored-man-pages" "tmux" ];
         theme = "random";
-        extraConfig = ''
-          ZSH_THEME_RANDOM_IGNORED=(smt humza)
-        '';
       };
     };
 
@@ -99,14 +101,6 @@
 
     zellij = {
       enable = true;
-      enableZshIntegration = true;
-    };
-
-    direnv = {
-      enable = true;
-      enableBashIntegration = true;
-      enableZshIntegration = true;
-      nix-direnv.enable = true;
     };
 
     emacs = {
@@ -123,6 +117,7 @@
   };
 
   home.file = {
+    ".config/zsh/zshrc".source = ./zshrc;
     ".config/alacritty/alacritty.yml".source = ./alacritty.yml;
     ".config/zellij/config.kdl".source = ./zellij.kdl;
     ".config/zellij/layouts/default.kdl".source = ./zellij-default-layout.kdl;
