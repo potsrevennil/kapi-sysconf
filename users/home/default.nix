@@ -64,6 +64,9 @@
         enable = true;
         plugins = [ "sudo" "git" "colored-man-pages" "tmux" ];
         theme = "random";
+        extraConfig = ''
+          DISABLE_MAGIC_FUNCTIONS=true
+        '';
       };
     };
 
