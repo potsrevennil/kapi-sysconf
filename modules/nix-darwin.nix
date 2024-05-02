@@ -10,6 +10,11 @@ let
         description = "System architecture for the configuration.";
       };
 
+      nixVersion = lib.mkOption {
+        type = types.str;
+        description = "nix version";
+      };
+
       stateVersion = lib.mkOption {
         type = types.int;
         description = "nix-darwin state version, changing this value DOES NOT update the system.";
@@ -33,7 +38,8 @@ let
         inherit (ctx) system;
         modules = config.modules ++ [
           ({ pkgs, ... }: {
-            inherit (ctx) nix nixpkgs;
+            inherit (ctx) nixpkgs;
+            nix = ctx.nix // { package = pkgs.nixVersions.${config.nixVersion}; };
             system.stateVersion = config.stateVersion;
             environment.systemPackages = [ pkgs.home-manager ];
           })
