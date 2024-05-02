@@ -41,7 +41,7 @@ let
             inherit (ctx) nixpkgs;
             nix = ctx.nix // { package = pkgs.nixVersions.${config.nixVersion}; };
             system.stateVersion = config.stateVersion;
-            environment.systemPackages = [ pkgs.home-manager ];
+            environment.systemPackages = [ pkgs.home-manager pkgs.alacritty ];
           })
         ];
       }
