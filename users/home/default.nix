@@ -56,6 +56,9 @@
         enable = true;
         highlighters = [ "main" "brackets" "pattern" "regexp" "cursor" "root" "line" ];
       };
+      shellAliases = {
+        ls = "ls --color";
+      };
       enableAutosuggestions = true;
       initExtra = ''
         source $HOME/.config/zsh/zshrc
