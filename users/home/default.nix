@@ -32,7 +32,8 @@
         git
         pre-commit
         tmux
-        tree;
+        tree
+        fzf;
     };
   };
 
@@ -58,6 +59,7 @@
       };
       shellAliases = {
         ls = "ls --color";
+        fman = "compgen -c | fzf | xargs man";
       };
       enableAutosuggestions = true;
       initExtra = ''
