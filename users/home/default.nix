@@ -61,7 +61,7 @@
         ls = "ls --color";
         fman = "compgen -c | fzf | xargs man";
       };
-      enableAutosuggestions = true;
+      autosuggestion.enable = true;
       initExtra = ''
         source $HOME/.config/zsh/zshrc
       '';
