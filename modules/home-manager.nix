@@ -29,8 +29,7 @@ let
 
     config._home = withSystem config.system (ctx:
       inputs.home-manager.lib.homeManagerConfiguration {
-        pkgs = inputs.nixpkgs.legacyPackages.${ctx.system};
-        # pkgs = ctx.pkgs;
+        pkgs = ctx.inputs'.nixpkgs.legacyPackages;
 
         modules = config.modules ++ [
           ({ pkgs, ... }:
