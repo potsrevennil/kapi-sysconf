@@ -1,4 +1,4 @@
-.PHONY: all os home clean distclean
+.PHONY: all os home update clean distclean
 
 Q ?= @
 
@@ -9,6 +9,9 @@ os:
 
 home:
 	$(Q)home-manager switch --flake .
+
+update:
+	$(Q)nix flake update
 
 clean:
 	$(Q)nix-store --gc
