@@ -83,6 +83,9 @@
 
     git = {
       enable = true;
+      delta = {
+        enable = true;
+      };
       extraConfig = {
         core.editor = "nvim";
         url = {
@@ -95,6 +98,13 @@
           name = "Thing-han, Lim";
         };
         commit.template = "~/.config/git/gitmessage_global";
+
+        delta = {
+          navigate = true;
+          side-by-side = true;
+        };
+        merge.conflictstyle = "diff3";
+        diff.colorMoved = "default";
       };
     };
 
