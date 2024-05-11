@@ -29,7 +29,6 @@
         slack
 
         # tools stack
-        git
         pre-commit
         tmux
         tree
@@ -79,6 +78,23 @@
         extraConfig = ''
           DISABLE_MAGIC_FUNCTIONS=true
         '';
+      };
+    };
+
+    git = {
+      enable = true;
+      extraConfig = {
+        core.editor = "nvim";
+        url = {
+          "git@github.com" = {
+            insteadOf = "https://github.com";
+          };
+        };
+        user = {
+          email = "15379156+potsrevennil@users.noreply.github.com ";
+          name = "Thing-han, Lim";
+        };
+        commit.template = "~/.config/git/gitmessage_global";
       };
     };
 
@@ -137,6 +153,7 @@
       ".config/alacritty/alacritty.yml".source = ./alacritty.yml;
       ".config/zellij/config.kdl".source = ./zellij.kdl;
       ".config/zellij/layouts/default.kdl".source = ./zellij-default-layout.kdl;
+      ".config/git/gitmessage_global".source = ./git/gitmessage_global;
     };
   };
 }

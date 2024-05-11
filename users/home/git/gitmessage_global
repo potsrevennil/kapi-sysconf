@@ -1,0 +1,7 @@
+# For more info please refer to [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)
+# allowed types: `build`, `chore`, `ci`, `docs`, `style`, `refactor`, `perf`, `test`, `fix`, `feat`
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
