@@ -33,6 +33,7 @@
         pre-commit
         tmux
         tree
+        wezterm
 
         fzf
         fzf-git-sh
@@ -126,10 +127,16 @@
     };
   };
 
-  home.file = {
-    ".config/zsh/zshrc".source = ./zshrc;
-    ".config/alacritty/alacritty.yml".source = ./alacritty.yml;
-    ".config/zellij/config.kdl".source = ./zellij.kdl;
-    ".config/zellij/layouts/default.kdl".source = ./zellij-default-layout.kdl;
+  home = {
+    sessionVariables = {
+      WEZTERM_CONFIG_FILE = "~/.config/wezterm/wezterm.lua";
+    };
+    file = {
+      ".config/zsh/zshrc".source = ./zshrc;
+      ".config/wezterm/wezterm.lua".source = ./wezterm.lua;
+      ".config/alacritty/alacritty.yml".source = ./alacritty.yml;
+      ".config/zellij/config.kdl".source = ./zellij.kdl;
+      ".config/zellij/layouts/default.kdl".source = ./zellij-default-layout.kdl;
+    };
   };
 }
