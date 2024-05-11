@@ -33,7 +33,12 @@
         pre-commit
         tmux
         tree
-        fzf;
+
+        fzf
+        fzf-git-sh
+        fzf-make
+        fd
+        bat;
     };
   };
 
@@ -64,6 +69,7 @@
       autosuggestion.enable = true;
       initExtra = ''
         source $HOME/.config/zsh/zshrc
+        source ${pkgs.fzf-git-sh}/share/fzf-git-sh/fzf-git.sh
       '';
       oh-my-zsh = {
         enable = true;
