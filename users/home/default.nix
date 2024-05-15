@@ -133,10 +133,6 @@
       '';
     };
 
-    zellij = {
-      enable = true;
-    };
-
     emacs = {
       enable = true;
       extraPackages = epkgs: with epkgs; [
@@ -158,8 +154,6 @@
       ".config/zsh/zshrc".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zshrc";
       ".config/wezterm/wezterm.lua".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/wezterm.lua";
       ".config/alacritty/alacritty.yml".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/alacritty.yml";
-      ".config/zellij/config.kdl".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zellij.kdl";
-      ".config/zellij/layouts/default.kdl".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zellij-default-layout.kdl";
       ".config/git/gitmessage_global".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git/gitmessage_global";
     };
   };
