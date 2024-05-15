@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, dotfiles, ... }:
 
 {
   home = {
@@ -94,7 +94,7 @@
           email = "15379156+potsrevennil@users.noreply.github.com ";
           name = "Thing-han, Lim";
         };
-        commit.template = "~/.config/git/gitmessage_global";
+        commit.template = "${config.home.homeDirectory}/.config/git/gitmessage_global";
 
         delta = {
           navigate = true;
@@ -152,15 +152,15 @@
 
   home = {
     sessionVariables = {
-      WEZTERM_CONFIG_FILE = "~/.config/wezterm/wezterm.lua";
+      WEZTERM_CONFIG_FILE = "${config.home.homeDirectory}/.config/wezterm/wezterm.lua";
     };
     file = {
-      ".config/zsh/zshrc".source = ./zshrc;
-      ".config/wezterm/wezterm.lua".source = ./wezterm.lua;
-      ".config/alacritty/alacritty.yml".source = ./alacritty.yml;
-      ".config/zellij/config.kdl".source = ./zellij.kdl;
-      ".config/zellij/layouts/default.kdl".source = ./zellij-default-layout.kdl;
-      ".config/git/gitmessage_global".source = ./git/gitmessage_global;
+      ".config/zsh/zshrc".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zshrc";
+      ".config/wezterm/wezterm.lua".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/wezterm.lua";
+      ".config/alacritty/alacritty.yml".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/alacritty.yml";
+      ".config/zellij/config.kdl".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zellij.kdl";
+      ".config/zellij/layouts/default.kdl".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zellij-default-layout.kdl";
+      ".config/git/gitmessage_global".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git/gitmessage_global";
     };
   };
 }
