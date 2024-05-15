@@ -33,6 +33,7 @@
         tmux
         tree
         wezterm
+        oh-my-zsh
 
         fzf
         fzf-git-sh
@@ -71,14 +72,10 @@
         source $HOME/.config/zsh/zshrc
         source ${pkgs.fzf-git-sh}/share/fzf-git-sh/fzf-git.sh
       '';
-      oh-my-zsh = {
-        enable = true;
-        plugins = [ "sudo" "git" "colored-man-pages" "tmux" ];
-        theme = "random";
-        extraConfig = ''
-          DISABLE_MAGIC_FUNCTIONS=true
-        '';
-      };
+      envExtra = ''
+        ZSH="${pkgs.oh-my-zsh}/share/oh-my-zsh";
+        ZSH_CACHE_DIR="${config.home.homeDirectory}/.cache/oh-my-zsh";
+      '';
     };
 
     git = {

@@ -1,4 +1,13 @@
+DISABLE_MAGIC_FUNCTIONS=true
+
+plugins=(sudo git colored-man-pages tmux)
+
+ZSH_THEME="random"
+ZSH_THEME_RANDOM_CANDIDATES=(
+    "sorin"
+)
 ZSH_THEME_RANDOM_IGNORED=(smt humza)
+source $ZSH/oh-my-zsh.sh
 
 eval "$(direnv hook zsh)"
 
