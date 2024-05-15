@@ -19,7 +19,7 @@
     };
 
     kapi-vim = {
-      url = "github:potsrevennil/kapi-vim?ref=refs/tags/0.7.1";
+      url = "github:potsrevennil/kapi-vim?ref=refs/tags/0.7.3";
     };
   };
   outputs = inputs@{ flake-parts, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
