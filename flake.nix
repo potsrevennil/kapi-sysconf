@@ -52,21 +52,23 @@
         };
       };
 
-      devShells.default = with pkgs; mkShellNoCC {
-        packages = [
-          direnv
-          nix-direnv
+      devShells.default =
+        pkgs.mkShellNoCC {
+          packages = builtins.attrValues {
+            inherit (pkgs)
+              direnv
+              nix-direnv
 
-          nixpkgs-fmt
-          nixd
-          deadnix
-          statix
-        ];
+              nixpkgs-fmt
+              nixd
+              deadnix
+              statix;
+          };
 
-        shellHook = ''
-          export PATH=$PWD/bin:$PATH
-        '';
-      };
+          shellHook = ''
+            export PATH=$PWD/bin:$PATH
+          '';
+        };
 
     };
   };
