@@ -124,13 +124,10 @@
   };
 
   xdg.configFile = {
-    "zsh".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zshrc";
-    "wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/wezterm.lua";
-    "alacritty".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/alacritty.yml";
-    "git" = {
-      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git";
-      recursive = true;
-    };
+    "zsh".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zsh";
+    "wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/wezterm";
+    "alacritty".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/alacritty";
+    "git".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git";
   };
 
   home = {
