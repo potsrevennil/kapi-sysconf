@@ -27,6 +27,8 @@
         awscli2
         gh
         slack
+        git
+        delta
 
         # tools stack
         pre-commit
@@ -78,33 +80,6 @@
       '';
     };
 
-    git = {
-      enable = true;
-      delta = {
-        enable = true;
-      };
-      extraConfig = {
-        core.editor = "nvim";
-        url = {
-          "git@github.com" = {
-            insteadOf = "https://github.com";
-          };
-        };
-        user = {
-          email = "15379156+potsrevennil@users.noreply.github.com ";
-          name = "Thing-han, Lim";
-        };
-        commit.template = "${config.home.homeDirectory}/.config/git/gitmessage_global";
-
-        delta = {
-          navigate = true;
-          side-by-side = true;
-        };
-        merge.conflictstyle = "diff3";
-        diff.colorMoved = "default";
-      };
-    };
-
     tmux = {
       enable = true;
       shell = "${pkgs.zsh}/bin/zsh";
@@ -146,15 +121,19 @@
     };
   };
 
+  xdg.configFile = {
+    "zsh".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zshrc";
+    "wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/wezterm.lua";
+    "alacritty".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/alacritty.yml";
+    "git" = {
+      source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git";
+      recursive = true;
+    };
+  };
+
   home = {
     sessionVariables = {
       WEZTERM_CONFIG_FILE = "${config.home.homeDirectory}/.config/wezterm/wezterm.lua";
-    };
-    file = {
-      ".config/zsh/zshrc".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zshrc";
-      ".config/wezterm/wezterm.lua".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/wezterm.lua";
-      ".config/alacritty/alacritty.yml".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/alacritty.yml";
-      ".config/git/gitmessage_global".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git/gitmessage_global";
     };
   };
 }
