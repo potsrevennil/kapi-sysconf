@@ -41,7 +41,9 @@
         fzf-git-sh
         fzf-make
         fd
-        bat;
+        bat
+
+        libsixel;
     };
   };
 
