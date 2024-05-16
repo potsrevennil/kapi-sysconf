@@ -1,0 +1,9 @@
+romkatv/zsh-bench kind:path
+romkatv/powerlevel10k
+
+zdharma-continuum/fast-syntax-highlighting
+zsh-users/zsh-autosuggestions
+
+belak/zsh-utils path:completion
+
+ohmyzsh/ohmyzsh path:plugins/git

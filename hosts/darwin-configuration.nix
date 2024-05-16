@@ -1,6 +1,11 @@
 { pkgs, ... }:
 {
-  programs.zsh.enable = true;
+  programs.zsh = {
+    enable = true;
+    enableCompletion = false;
+    enableBashCompletion = false;
+    promptInit = "";
+  };
 
   environment = {
     shells = with pkgs; [ bash zsh ];

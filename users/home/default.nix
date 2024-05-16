@@ -35,7 +35,7 @@
         tmux
         tree
         wezterm
-        oh-my-zsh
+        antidote
 
         fzf
         fzf-git-sh
@@ -57,28 +57,24 @@
 
     zsh = {
       enable = true;
-      autocd = true;
+      enableCompletion = false;
       history = {
         expireDuplicatesFirst = true;
         ignoreAllDups = true;
-        share = false;
       };
-      syntaxHighlighting = {
-        enable = true;
-        highlighters = [ "main" "brackets" "pattern" "regexp" "cursor" "root" "line" ];
-      };
-      shellAliases = {
-        ls = "ls --color";
-        fman = "compgen -c | fzf | xargs man";
-      };
-      autosuggestion.enable = true;
+      initExtraFirst = ''
+        # powerlevel10k prompt cache
+        if [[ -r "${config.xdg.cacheHome}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
+          source "${config.xdg.cacheHome}/p10k-instant-prompt-''${(%):-%n}.zsh"
+        fi
+      '';
       initExtra = ''
-        source $HOME/.config/zsh/zshrc
-        source ${pkgs.fzf-git-sh}/share/fzf-git-sh/fzf-git.sh
+        source ${config.xdg.configHome}/zsh/zshrc
       '';
       envExtra = ''
-        ZSH="${pkgs.oh-my-zsh}/share/oh-my-zsh";
-        ZSH_CACHE_DIR="${config.home.homeDirectory}/.cache/oh-my-zsh";
+        setopt no_global_rcs
+        ANTIDOTE=${pkgs.antidote}/share/antidote;
+        ZSH=${pkgs.zsh}/share/zsh;
       '';
     };
 

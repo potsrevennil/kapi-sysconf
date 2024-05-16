@@ -1,16 +1,21 @@
-DISABLE_MAGIC_FUNCTIONS=true
+zsh_plugins=$HOME/.config/zsh/zsh_plugins
+fpath=(${ANTIDOTE}/functions $fpath)
+autoload -Uz antidote
+if [[ ! ${zsh_plugins}.zsh -nt ${zsh_plugins}.txt ]]; then
+  (
+    source ${ANTIDOTE}/antidote.zsh
+    antidote bundle <${zsh_plugins}.txt >${zsh_plugins}.zsh
+  )
+fi
+source ${zsh_plugins}.zsh
 
-plugins=(sudo git colored-man-pages tmux)
+# powerlevel10k prompt
+source $HOME/.config/zsh/p10k.zsh
 
-ZSH_THEME="random"
-ZSH_THEME_RANDOM_CANDIDATES=(
-    "sorin"
-)
-ZSH_THEME_RANDOM_IGNORED=(smt humza)
-source $ZSH/oh-my-zsh.sh
-
+# direnv
 eval "$(direnv hook zsh)"
 
+# direnv ignore exports
 copy_function() {
   test -n "$(declare -f "$1")" || return
   eval "${_/$1/$2}"
@@ -22,6 +27,7 @@ _direnv_hook() {
   _direnv_hook__old "$@" 2> >( egrep -v -e '^direnv: (export)' )
 };
 
+# fzf
 eval "$(fzf --zsh)"
 
 _fzf_comprun() {
@@ -35,3 +41,7 @@ _fzf_comprun() {
     *)              fzf --preview 'bat -n --color=always {}'    "$@";;
   esac
 }
+
+# alias
+alias ls="ls --color"
+alias fman="compgen -c | fzf | xargs man"
