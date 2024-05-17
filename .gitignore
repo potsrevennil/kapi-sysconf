@@ -1,2 +1,4 @@
 .direnv
 users/home/zsh/zsh_plugins.zsh
+users/home/emacs/auto-save-list
+users/home/emacs/eln-cache

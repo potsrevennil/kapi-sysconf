@@ -111,11 +111,8 @@
       extraPackages = epkgs: with epkgs; [
         lsp-mode
         evil
+        proof-general
       ];
-      extraConfig = ''
-        (require 'evil)
-        (evil-mode 1)
-      '';
     };
   };
 
@@ -124,6 +121,7 @@
     "wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/wezterm";
     "alacritty".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/alacritty";
     "git".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git";
+    "emacs".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/emacs";
   };
 
   home = {
