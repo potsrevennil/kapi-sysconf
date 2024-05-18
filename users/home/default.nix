@@ -6,7 +6,7 @@
       inherit (pkgs)
         direnv
 
-        kapi-vim
+        kapi-vim-base
         kapi-vim-lsp
         nixpkgs-fmt
         nixd
@@ -122,6 +122,7 @@
     "alacritty".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/alacritty";
     "git".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git";
     "emacs".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/emacs";
+    "nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/kapi-vim";
   };
 
   home = {

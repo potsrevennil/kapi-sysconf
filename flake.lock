@@ -87,32 +87,31 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1715795711,
-        "narHash": "sha256-ypACkkoa0KOGkHU+heX3nV+VGx4nnT7lsdnqsRnUBLw=",
-        "owner": "potsrevennil",
-        "repo": "kapi-vim",
-        "rev": "b4d4d39f61f87a36c2277843f973d7bb70c5ecb8",
-        "type": "github"
+        "lastModified": 1716030549,
+        "narHash": "sha256-FpWfmjghzcK6kHMgJACl+0g97TywORFHRZ5kJZgXwdE=",
+        "rev": "cc2d9d63c61334db7cd110a047d90ca4fc56304b",
+        "revCount": 181,
+        "type": "git",
+        "url": "file://file:./users/home/kapi-vim"
       },
       "original": {
-        "owner": "potsrevennil",
-        "ref": "refs/tags/0.7.3",
-        "repo": "kapi-vim",
-        "type": "github"
+        "rev": "cc2d9d63c61334db7cd110a047d90ca4fc56304b",
+        "type": "git",
+        "url": "file://file:./users/home/kapi-vim"
       }
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1704194953,
-        "narHash": "sha256-RtDKd8Mynhe5CFnVT8s0/0yqtWFMM9LmCzXv/YKxnq4=",
+        "lastModified": 1715969306,
+        "narHash": "sha256-9n7SSGF++IJSUQQNuYnj6NNiDjjWvkzABKiTeY24COQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "bd645e8668ec6612439a9ee7e71f7eac4099d4f6",
+        "rev": "0837fbf227364d79cbae8fff2378125526905cbe",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-unstable",
+        "ref": "nixpkgs-unstable",
         "repo": "nixpkgs",
         "type": "github"
       }
