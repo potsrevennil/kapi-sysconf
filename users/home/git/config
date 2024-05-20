@@ -6,6 +6,7 @@
 	pager = delta
 
 [delta]
+    features = Dracula
 	navigate = true
 	side-by-side = true
 
