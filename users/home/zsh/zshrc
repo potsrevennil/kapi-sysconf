@@ -42,6 +42,9 @@ _fzf_comprun() {
   esac
 }
 
+# fix catch command not found when executing nix command with "#"
+setopt noglob
+
 # alias
 alias ls="ls --color"
 alias fman="compgen -c | fzf | xargs man"
