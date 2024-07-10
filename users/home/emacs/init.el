@@ -1,3 +1,5 @@
 (require 'evil)
 (evil-mode 1)
 (setq backup-directory-alist '((".*" . "~/.Trash")))
+(setq create-lockfiles nil)
+(load-theme 'tsdh-dark t)
