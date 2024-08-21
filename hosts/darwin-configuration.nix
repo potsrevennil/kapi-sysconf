@@ -49,8 +49,7 @@
   };
 
   fonts = {
-    fontDir.enable = true;
-    fonts = with pkgs; [ (nerdfonts.override { fonts = [ "Agave" ]; }) ];
+    packages = with pkgs; [ (nerdfonts.override { fonts = [ "Agave" ]; }) ];
   };
 
   homebrew = {
