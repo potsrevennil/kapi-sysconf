@@ -26,7 +26,6 @@
         # IaaS tools
         awscli2
         gh
-        slack
         git
         delta
 
