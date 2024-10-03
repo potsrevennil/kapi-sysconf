@@ -109,7 +109,6 @@
       enable = true;
       extraPackages = epkgs: with epkgs; [
         lsp-mode
-        evil
         proof-general
       ];
     };
