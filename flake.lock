@@ -70,17 +70,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1724852617,
-        "narHash": "sha256-OYcxX9nUDofkf/5hxFKO5hclTZCOy6eJczI2WlBiY+U=",
+        "lastModified": 1728200150,
+        "narHash": "sha256-d0kw5F8ZItYgfPN+hkRzdPBX9fJy3mAd1UvTgQbyrlE=",
         "owner": "potsrevennil",
         "repo": "kapi-vim",
-        "rev": "5971389e5f0ca31e28d5191ad26364e9bedaea71",
+        "rev": "b3d644018e353cc38883182b68a95df0633e5f62",
         "type": "github"
       },
       "original": {
         "owner": "potsrevennil",
         "repo": "kapi-vim",
-        "rev": "5971389e5f0ca31e28d5191ad26364e9bedaea71",
+        "rev": "b3d644018e353cc38883182b68a95df0633e5f62",
         "type": "github"
       }
     },

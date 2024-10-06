@@ -3,11 +3,11 @@
 {
   home = {
     packages = builtins.attrValues {
+      kapi-vim = pkgs.kapi-vim.override { enable_haskell = true; enable_lean = true; };
+
       inherit (pkgs)
         direnv
 
-        kapi-vim-base
-        kapi-vim-lsp
         nixpkgs-fmt
         nixd
 
