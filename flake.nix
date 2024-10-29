@@ -36,13 +36,6 @@
             experimental-features = nix-command flakes
           '';
 
-          settings = {
-            auto-optimise-store = false;
-            trusted-users = [
-              "root"
-              "thing-hanlim"
-            ];
-          };
         };
         nixpkgs = {
           config = lib.mkForce {

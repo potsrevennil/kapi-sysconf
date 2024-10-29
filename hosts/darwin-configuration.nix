@@ -13,6 +13,14 @@
     variables = {
       EDITOR = "vim";
     };
+
+    systemPackages = with pkgs; [
+      home-manager
+      wezterm
+      emacs
+      alacritty
+      libsixel
+    ];
   };
 
   services.nix-daemon.enable = true;
@@ -49,7 +57,12 @@
   };
 
   fonts = {
-    packages = with pkgs; [ (nerdfonts.override { fonts = [ "Agave" ]; }) ];
+    packages = with pkgs; [
+      (nerdfonts.override { fonts = [ "Agave" ]; })
+      roboto
+      source-sans-pro
+      python311Packages.fontawesomefree
+    ];
   };
 
   homebrew = {

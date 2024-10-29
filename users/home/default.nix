@@ -33,16 +33,13 @@
         pre-commit
         tmux
         tree
-        wezterm
         antidote
 
         fzf
         fzf-git-sh
         fzf-make
         fd
-        bat
-
-        libsixel;
+        bat;
     };
   };
 
