@@ -1,9 +1,27 @@
-{ config, pkgs, dotfiles, ... }:
+{ config
+, pkgs
+, dotfiles
+, username
+, stateVersion
+, lite ? false
+, ...
+}:
 
 {
   home = {
+    username = username;
+    homeDirectory = pkgs.lib.mkMerge [
+      (pkgs.lib.mkIf pkgs.stdenv.isDarwin "/Users/${username}")
+      (pkgs.lib.mkIf pkgs.stdenv.isLinux "/home/${username}")
+    ];
+    stateVersion = stateVersion;
+
     packages = builtins.attrValues {
-      kapi-vim = pkgs.kapi-vim.override { enable_haskell = true; enable_lean = true; };
+      kapi-vim = pkgs.kapi-vim.override {
+        enable_haskell = ! lite;
+        enable_lean = ! lite;
+        enable_typst = ! lite;
+      };
 
       inherit (pkgs)
         direnv
@@ -40,6 +58,10 @@
         fzf-make
         fd
         bat;
+    };
+
+    sessionVariables = pkgs.lib.optionalAttrs (! lite) {
+      WEZTERM_CONFIG_FILE = "${config.home.homeDirectory}/.config/wezterm/wezterm.lua";
     };
   };
 
@@ -113,16 +135,11 @@
 
   xdg.configFile = {
     "zsh".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zsh";
+    "git".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git";
+    "nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/kapi-vim";
+  } // pkgs.lib.optionalAttrs (! lite) {
     "wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/wezterm";
     "alacritty".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/alacritty";
-    "git".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git";
     "emacs".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/emacs";
-    "nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/kapi-vim";
-  };
-
-  home = {
-    sessionVariables = {
-      WEZTERM_CONFIG_FILE = "${config.home.homeDirectory}/.config/wezterm/wezterm.lua";
-    };
   };
 }
