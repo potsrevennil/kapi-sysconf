@@ -19,7 +19,7 @@
     };
 
     kapi-vim = {
-      url = "github:potsrevennil/kapi-vim?rev=b3d644018e353cc38883182b68a95df0633e5f62";
+      url = "github:potsrevennil/kapi-vim?rev=19262d4f28d151b269229ee071267dd41c98f260";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-parts.follows = "flake-parts";
