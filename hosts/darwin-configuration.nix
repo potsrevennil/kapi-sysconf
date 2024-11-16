@@ -9,7 +9,6 @@
 
   environment = {
     shells = with pkgs; [ bash zsh ];
-    loginShell = pkgs.zsh;
     variables = {
       EDITOR = "vim";
     };
