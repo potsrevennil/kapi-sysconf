@@ -15,6 +15,8 @@ config.inactive_pane_hsb = {
 	brightness = 0.7,
 }
 
+config.front_end = 'WebGpu'
+
 config.font = wezterm.font("agave Nerd Font")
 config.font_size = 16
 
