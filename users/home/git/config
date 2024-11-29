@@ -19,9 +19,6 @@
 [merge]
 	conflictstyle = "diff3"
 
-[url "git@github.com"]
-	insteadOf = "https://github.com"
-
 [user]
 	email = "15379156+potsrevennil@users.noreply.github.com "
 	name = "Thing-han, Lim"
