@@ -57,7 +57,7 @@
 
   fonts = {
     packages = with pkgs; [
-      (nerdfonts.override { fonts = [ "Agave" ]; })
+      nerd-fonts.agave
       roboto
       source-sans-pro
       python311Packages.fontawesomefree

@@ -18,7 +18,7 @@
                 ];
               };
 
-              package = pkgs.nixVersions.nix_2_23;
+              package = pkgs.nixVersions.nix_2_25;
             };
             system.stateVersion = 5;
           })
