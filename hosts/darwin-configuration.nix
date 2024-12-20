@@ -66,6 +66,9 @@
 
   homebrew = {
     enable = true;
+    brewPrefix =
+      if pkgs.stdenv.hostPlatform.isAarch64 then "/opt/homebrew"
+      else "/usr/local";
     caskArgs.no_quarantine = true;
     global.brewfile = true;
     casks = [

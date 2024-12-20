@@ -86,9 +86,17 @@
           source "${config.xdg.cacheHome}/p10k-instant-prompt-''${(%):-%n}.zsh"
         fi
       '';
-      initExtra = ''
-        source ${config.xdg.configHome}/zsh/zshrc
-      '';
+      initExtra =
+        let
+          brew =
+            if pkgs.stdenv.hostPlatform.isAarch64
+            then "/opt/homebrew/bin/brew"
+            else "/usr/local/bin/brew";
+        in
+        ''
+          eval "$(${brew} shellenv)"
+          source ${config.xdg.configHome}/zsh/zshrc
+        '';
       envExtra = ''
         setopt no_global_rcs
         ANTIDOTE=${pkgs.antidote}/share/antidote;
