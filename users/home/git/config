@@ -19,6 +19,9 @@
 [merge]
 	conflictstyle = "diff3"
 
+[submodule]
+    stickyRecursiveClone = ture
+
 [user]
 	email = "15379156+potsrevennil@users.noreply.github.com "
 	name = "Thing-han, Lim"
