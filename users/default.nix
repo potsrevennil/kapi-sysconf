@@ -14,7 +14,7 @@
                 inherit config pkgs;
                 dotfiles = "${config.home.homeDirectory}/Projects/kapi-sysconf/users/home/";
                 username = "thing-hanlim";
-                stateVersion = "24.05";
+                stateVersion = "24.11";
               })
             ];
           })

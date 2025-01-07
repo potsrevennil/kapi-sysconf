@@ -57,7 +57,7 @@
 
   fonts = {
     packages = with pkgs; [
-      nerd-fonts.agave
+      (nerdfonts.override { fonts = [ "Agave" ]; })
       roboto
       source-sans-pro
       python311Packages.fontawesomefree
@@ -65,7 +65,7 @@
   };
 
   homebrew = {
-    enable = true;
+    enable = false;
     brewPrefix =
       if pkgs.stdenv.hostPlatform.isAarch64 then "/opt/homebrew"
       else "/usr/local";
