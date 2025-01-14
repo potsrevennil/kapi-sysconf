@@ -24,8 +24,6 @@
       };
 
       inherit (pkgs)
-        direnv
-
         nixpkgs-fmt
         nixd
 
@@ -68,9 +66,20 @@
   programs = {
     home-manager.enable = true;
 
+    direnv = {
+      enable = true;
+      enableBashIntegration = false;
+      enableZshIntegration = false;
+      nix-direnv.enable = true;
+      config = {
+        hide_env_diff = true;
+      };
+    };
+
     bash = {
       enable = true;
-      profileExtra = "exec zsh -l";
+      enableCompletion = true;
+      historyControl = [ "erasedups" ];
     };
 
     zsh = {

@@ -15,18 +15,6 @@ source $HOME/.config/zsh/p10k.zsh
 # direnv
 eval "$(direnv hook zsh)"
 
-# direnv ignore exports
-copy_function() {
-  test -n "$(declare -f "$1")" || return
-  eval "${_/$1/$2}"
-}
-
-copy_function _direnv_hook _direnv_hook__old
-
-_direnv_hook() {
-  _direnv_hook__old "$@" 2> >( egrep -v -e '^direnv: (export)' )
-};
-
 # fzf
 eval "$(fzf --zsh)"
 
@@ -43,7 +31,7 @@ _fzf_comprun() {
 }
 
 # fix catch command not found when executing nix command with "#"
-setopt noglob
+# setopt noglob
 
 # alias
 alias ls="ls --color"
