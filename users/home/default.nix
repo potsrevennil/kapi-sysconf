@@ -137,6 +137,7 @@
       extraPackages = epkgs: with epkgs; [
         lsp-mode
         proof-general
+        evil
       ];
     };
   };
