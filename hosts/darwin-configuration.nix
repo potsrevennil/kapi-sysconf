@@ -1,5 +1,6 @@
 { pkgs, ... }:
 {
+  nix.enable = false;
   programs.zsh = {
     enable = true;
     enableCompletion = false;
@@ -19,10 +20,10 @@
       emacs
       alacritty
       libsixel
+      raycast
+      arc-browser
     ];
   };
-
-  services.nix-daemon.enable = true;
 
   system = {
     defaults = {
@@ -62,20 +63,5 @@
       source-sans-pro
       python311Packages.fontawesomefree
     ];
-  };
-
-  homebrew = {
-    enable = false;
-    brewPrefix =
-      if pkgs.stdenv.hostPlatform.isAarch64 then "/opt/homebrew"
-      else "/usr/local";
-    caskArgs.no_quarantine = true;
-    global.brewfile = true;
-    casks = [
-      "raycast"
-      "arc"
-      "1password"
-    ];
-    onActivation.cleanup = "zap";
   };
 }

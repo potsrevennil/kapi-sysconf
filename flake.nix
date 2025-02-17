@@ -14,7 +14,7 @@
     };
 
     darwin = {
-      url = "github:lnl7/nix-darwin";
+      url = "github:lnl7/nix-darwin/nix-darwin-24.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -31,12 +31,6 @@
     systems = [ "aarch64-darwin" "x86_64-darwin" "aarch64-linux" "x86_64-linux" ];
     perSystem = { pkgs, lib, ... }: {
       _module.args = {
-        nix = {
-          extraOptions = ''
-            experimental-features = nix-command flakes
-          '';
-
-        };
         nixpkgs = {
           config = lib.mkForce {
             allowBroken = true;

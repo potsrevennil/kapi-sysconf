@@ -6,20 +6,8 @@
         inherit inputs;
         inherit (ctx) system;
         modules = [
-          ({ pkgs, ... }: {
+          ({ ... }: {
             inherit (ctx) nixpkgs;
-
-            nix = ctx.nix // {
-              settings = {
-                auto-optimise-store = false;
-                trusted-users = [
-                  "root"
-                  "thing-hanlim"
-                ];
-              };
-
-              package = pkgs.nixVersions.nix_2_25;
-            };
             system.stateVersion = 5;
           })
 
