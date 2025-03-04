@@ -1,7 +1,24 @@
 { inputs, withSystem, ... }:
 {
+  config.flake.darwinConfigurations = {
+    wisdom-root-m4 = withSystem "aarch64-darwin" (ctx:
+      inputs.darwin.lib.darwinSystem {
+        inherit inputs;
+        inherit (ctx) system;
+        modules = [
+          ({ ... }: {
+            inherit (ctx) nixpkgs;
+            system.stateVersion = 5;
+          })
+
+          ./darwin.nix
+        ];
+      }
+    );
+  };
+
   config.flake.homeConfigurations = {
-    "thing-hanlim@wisdom-root-m4" = withSystem "aarch64-darwin" (ctx:
+    thing-hanlim = withSystem "aarch64-darwin" (ctx:
       inputs.home-manager.lib.homeManagerConfiguration {
         pkgs = ctx.inputs'.nixpkgs.legacyPackages;
 
@@ -10,7 +27,7 @@
           ({ config, pkgs, ... }: {
             inherit (ctx) nixpkgs;
             imports = [
-              (import ./home {
+              (import ./home.nix {
                 inherit config pkgs;
                 dotfiles = "${config.home.homeDirectory}/Projects/kapi-sysconf/users/home/";
                 username = "thing-hanlim";

@@ -27,7 +27,7 @@
     };
   };
   outputs = inputs@{ flake-parts, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
-    imports = [ ./hosts ./users ];
+    imports = [ ./users ];
     systems = [ "aarch64-darwin" "x86_64-darwin" "aarch64-linux" "x86_64-linux" ];
     perSystem = { pkgs, lib, ... }: {
       _module.args = {
