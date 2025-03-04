@@ -1,7 +1,7 @@
 { inputs, withSystem, ... }:
 {
   config.flake.darwinConfigurations = {
-    Thing-hans-MacBook-Pro = withSystem "aarch64-darwin" (ctx:
+    wisdom-root-m4 = withSystem "aarch64-darwin" (ctx:
       inputs.darwin.lib.darwinSystem {
         inherit inputs;
         inherit (ctx) system;

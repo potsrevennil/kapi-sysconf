@@ -1,7 +1,7 @@
 { inputs, withSystem, ... }:
 {
   config.flake.homeConfigurations = {
-    "thing-hanlim@Thing-hans-MacBook-Pro" = withSystem "aarch64-darwin" (ctx:
+    "thing-hanlim@wisdom-root-m4" = withSystem "aarch64-darwin" (ctx:
       inputs.home-manager.lib.homeManagerConfiguration {
         pkgs = ctx.inputs'.nixpkgs.legacyPackages;
 
