@@ -8,14 +8,14 @@ local config = wezterm.config_builder()
 config.color_scheme = "Dracula"
 
 config.use_fancy_tab_bar = true
-config.window_background_opacity = 0.6
+config.window_background_opacity = 0.8
 config.text_background_opacity = 0.8
 config.inactive_pane_hsb = {
 	saturation = 0.8,
 	brightness = 0.7,
 }
 
-config.front_end = 'WebGpu'
+config.front_end = "WebGpu"
 
 config.font = wezterm.font("agave Nerd Font")
 config.font_size = 16
