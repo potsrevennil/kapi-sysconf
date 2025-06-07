@@ -9,6 +9,7 @@
           ({ ... }: {
             inherit (ctx) nixpkgs;
             system.stateVersion = 5;
+            system.primaryUser = "thing-hanlim";
           })
 
           ./darwin.nix

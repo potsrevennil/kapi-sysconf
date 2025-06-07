@@ -1,10 +1,10 @@
 {
   description = "Han's system configuration";
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
 
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
+      url = "github:nix-community/home-manager/release-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -14,7 +14,7 @@
     };
 
     darwin = {
-      url = "github:lnl7/nix-darwin/nix-darwin-24.11";
+      url = "github:lnl7/nix-darwin/nix-darwin-25.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -30,17 +30,15 @@
     imports = [ ./users ];
     systems = [ "aarch64-darwin" "x86_64-darwin" "aarch64-linux" "x86_64-linux" ];
     perSystem = { pkgs, lib, ... }: {
-      _module.args = {
-        nixpkgs = {
-          config = lib.mkForce {
-            allowBroken = true;
-            allowUnfree = true;
-          };
-
-          overlays = lib.mkForce [
-            inputs.kapi-vim.overlays.default
-          ];
+      _module.args.nixpkgs = {
+        config = lib.mkForce {
+          allowBroken = true;
+          allowUnfree = true;
         };
+
+        overlays = [
+          inputs.kapi-vim.overlays.default
+        ];
       };
 
       devShells.default =

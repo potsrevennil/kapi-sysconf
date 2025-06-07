@@ -89,23 +89,27 @@
         expireDuplicatesFirst = true;
         ignoreAllDups = true;
       };
-      initExtraFirst = ''
-        # powerlevel10k prompt cache
-        if [[ -r "${config.xdg.cacheHome}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
-          source "${config.xdg.cacheHome}/p10k-instant-prompt-''${(%):-%n}.zsh"
-        fi
-      '';
-      initExtra =
+      initContent =
         let
-          brew =
-            if pkgs.stdenv.hostPlatform.isAarch64
-            then "/opt/homebrew/bin/brew"
-            else "/usr/local/bin/brew";
+          initExtraFirst = pkgs.lib.mkBefore ''
+            # powerlevel10k prompt cache
+            if [[ -r "${config.xdg.cacheHome}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
+              source "${config.xdg.cacheHome}/p10k-instant-prompt-''${(%):-%n}.zsh"
+            fi
+          '';
+          initExtra =
+            let
+              brew =
+                if pkgs.stdenv.hostPlatform.isAarch64
+                then "/opt/homebrew/bin/brew"
+                else "/usr/local/bin/brew";
+            in
+            ''
+              eval "$(${brew} shellenv)"
+              source ${config.xdg.configHome}/zsh/zshrc
+            '';
         in
-        ''
-          eval "$(${brew} shellenv)"
-          source ${config.xdg.configHome}/zsh/zshrc
-        '';
+        pkgs.lib.mkMerge [ initExtraFirst initExtra ];
       envExtra = ''
         setopt no_global_rcs
         ANTIDOTE=${pkgs.antidote}/share/antidote;
