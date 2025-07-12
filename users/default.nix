@@ -40,4 +40,15 @@
       }
     );
   };
+
+  config.flake.nixosConfigurations = {
+    nixos = withSystem "aarch64-linux" (ctx:
+      inputs.nixpkgs.lib.nixosSystem {
+        inherit (ctx) system;
+        specialArgs = { inherit inputs; };
+        modules = [
+          ./odroid
+        ];
+      });
+  };
 }
