@@ -34,8 +34,10 @@
   outputs = inputs@{ flake-parts, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
     imports = [ ./users ];
     systems = [ "aarch64-darwin" "x86_64-darwin" "aarch64-linux" "x86_64-linux" ];
-    perSystem = { pkgs, lib, ... }: {
-      _module.args.nixpkgs = {
+    perSystem = { pkgs, lib, system, ... }: {
+      _module.args.pkgs = import inputs.nixpkgs {
+        inherit system;
+
         config = lib.mkForce {
           allowBroken = true;
           allowUnfree = true;

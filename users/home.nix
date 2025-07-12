@@ -1,9 +1,11 @@
-{ config
-, pkgs
-, dotfiles
+{ dotfiles
 , username
 , stateVersion
 , lite ? false
+, ...
+}:
+{ config
+, pkgs
 , ...
 }:
 
