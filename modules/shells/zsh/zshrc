@@ -10,7 +10,20 @@ fi
 source ${zsh_plugins}.zsh
 
 # powerlevel10k prompt
-source $HOME/.config/zsh/p10k.zsh
+source $HOME/.p10k.zsh
+
+# set brew for macOS
+if [[ "$(uname)" == "Darwin" ]]; then
+  if [[ "$(uname -m)" == "arm64" ]]; then
+    BREW="/opt/homebrew/bin/brew"
+  else
+    BREW="/usr/local/bin/brew"
+  fi
+
+  if [[ -x "$BREW" ]]; then
+    eval "$($BREW shellenv)"
+  fi
+fi
 
 # direnv
 eval "$(direnv hook zsh)"

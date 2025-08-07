@@ -10,6 +10,11 @@
 }:
 
 {
+  imports = [ ../modules/shells ];
+  modules.shells = {
+    enable = true;
+  };
+
   home = {
     username = username;
     homeDirectory = pkgs.lib.mkMerge [
@@ -51,7 +56,6 @@
         pre-commit
         tmux
         tree
-        antidote
 
         fzf
         fzf-git-sh
@@ -62,64 +66,12 @@
     };
 
     sessionVariables = pkgs.lib.optionalAttrs (! lite) {
-      WEZTERM_CONFIG_FILE = "${config.home.homeDirectory}/.config/wezterm/wezterm.lua";
+      WEZTERM_CONFIG_FILE = "${config.xdg.configHome}/wezterm/wezterm.lua";
     };
   };
 
   programs = {
     home-manager.enable = true;
-
-    direnv = {
-      enable = true;
-      enableBashIntegration = false;
-      enableZshIntegration = false;
-      nix-direnv.enable = true;
-      config = {
-        hide_env_diff = true;
-      };
-    };
-
-    bash = {
-      enable = true;
-      enableCompletion = true;
-      historyControl = [ "erasedups" ];
-    };
-
-    zsh = {
-      enable = true;
-      enableCompletion = false;
-      history = {
-        expireDuplicatesFirst = true;
-        ignoreAllDups = true;
-      };
-      initContent =
-        let
-          initExtraFirst = pkgs.lib.mkBefore ''
-            # powerlevel10k prompt cache
-            if [[ -r "${config.xdg.cacheHome}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
-              source "${config.xdg.cacheHome}/p10k-instant-prompt-''${(%):-%n}.zsh"
-            fi
-          '';
-          initExtra =
-            let
-              brew =
-                if pkgs.stdenv.hostPlatform.isAarch64
-                then "/opt/homebrew/bin/brew"
-                else "/usr/local/bin/brew";
-            in
-            ''
-              eval "$(${brew} shellenv)"
-              source ${config.xdg.configHome}/zsh/zshrc
-            '';
-        in
-        pkgs.lib.mkMerge [ initExtraFirst initExtra ];
-      envExtra = ''
-        setopt no_global_rcs
-        ANTIDOTE=${pkgs.antidote}/share/antidote;
-        ZSH=${pkgs.zsh}/share/zsh;
-      '';
-    };
-
     tmux = {
       enable = true;
       shell = "${pkgs.zsh}/bin/zsh";
@@ -159,7 +111,6 @@
   };
 
   xdg.configFile = {
-    "zsh".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/zsh";
     "git".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git";
     "nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/kapi-vim";
   } // pkgs.lib.optionalAttrs (! lite) {
