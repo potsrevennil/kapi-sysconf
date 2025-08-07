@@ -43,9 +43,7 @@
           allowUnfree = true;
         };
 
-        overlays = [
-          inputs.kapi-vim.overlays.default
-        ];
+        overlays = import ./overlays { inherit inputs; };
       };
 
       devShells.default =
