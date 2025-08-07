@@ -93,11 +93,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1741106523,
-        "narHash": "sha256-T1QYpoXFnk6hhPSS1EW3EN+e/c3vpNoMKbsuh6Dljj8=",
+        "lastModified": 1753251107,
+        "narHash": "sha256-MYDQ2SIOgqrO08PHU0xA/hjf3tv3wnBBbiPw/wYaG28=",
         "ref": "refs/heads/master",
-        "rev": "e8e96a640e2cfcfedb4cc3fcacf7100c65c013f7",
-        "revCount": 230,
+        "rev": "ad5622cda11e5f0cccd86cc5f1dbb466d035ea27",
+        "revCount": 241,
         "shallow": true,
         "type": "git",
         "url": "file:users/home/kapi-vim"
