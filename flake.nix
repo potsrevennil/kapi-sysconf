@@ -2,6 +2,7 @@
   description = "Han's system configuration";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     home-manager = {
       url = "github:nix-community/home-manager/release-25.05";
@@ -43,7 +44,7 @@
           allowUnfree = true;
         };
 
-        overlays = import ./overlays { inherit inputs; };
+        overlays = import ./overlays { inherit inputs system; };
       };
 
       devShells.default =

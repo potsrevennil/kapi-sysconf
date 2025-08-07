@@ -57,7 +57,8 @@
         fzf-git-sh
         fzf-make
         fd
-        bat;
+        bat
+        gemini-cli;
     };
 
     sessionVariables = pkgs.lib.optionalAttrs (! lite) {
