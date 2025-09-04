@@ -9,6 +9,11 @@ if [[ ! ${zsh_plugins}.zsh -nt ${zsh_plugins}.txt ]]; then
 fi
 source ${zsh_plugins}.zsh
 
+# powerlevel10k prompt cache
+if [[ -r "${XDG_CACHE_HOME}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
+    source "${XDG_CACHE_HOME}/p10k-instant-prompt-''${(%):-%n}.zsh"
+fi
+
 # powerlevel10k prompt
 source $HOME/.p10k.zsh
 

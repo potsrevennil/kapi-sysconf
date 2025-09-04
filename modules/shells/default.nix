@@ -33,17 +33,11 @@ let cfg = config.modules.shells; in
         antidote.enable = true;
         initContent =
           let
-            initExtraFirst = pkgs.lib.mkBefore ''
-              # powerlevel10k prompt cache
-              if [[ -r "${config.xdg.cacheHome}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
-                source "${config.xdg.cacheHome}/p10k-instant-prompt-''${(%):-%n}.zsh"
-              fi
-            '';
             initExtra = ''
               source ${config.xdg.configHome}/zsh/zshrc
             '';
           in
-          pkgs.lib.mkMerge [ initExtraFirst initExtra ];
+          pkgs.lib.mkMerge [ initExtra ];
         envExtra = ''
           setopt no_global_rcs
           ANTIDOTE=${pkgs.antidote}/share/antidote;
