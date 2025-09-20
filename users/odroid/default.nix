@@ -1,4 +1,4 @@
-{ inputs, pkgs, ... }:
+{ inputs, pkgs, lib, ... }:
 
 {
   imports =
@@ -8,7 +8,19 @@
       ./disko.nix
     ];
 
-  networking.hostName = "nixos";
+  networking = {
+    useDHCP = lib.mkForce true;
+    networkmanager.enable = true;
+    hostName = "nixos";
+    nat = {
+      enable = true;
+      enableIPv6 = true;
+    };
+    firewall = {
+      enable = true;
+      allowedTCPPorts = [ 8000 ];
+    };
+  };
 
   users = {
     defaultUserShell = pkgs.zsh;
@@ -21,19 +33,23 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [ git vim neovim ];
+  environment.systemPackages = with pkgs; [ git vim neovim wireguard-tools ];
 
 
   programs.zsh = {
     enable = true;
-    # enableCompletion = false;
-    # enableBashCompletion = false;
     promptInit = "";
   };
 
-  services.openssh = {
-    enable = true;
-    settings.PermitRootLogin = "yes";
+  services = {
+    openssh = {
+      enable = true;
+      settings.PermitRootLogin = "yes";
+    };
+    tailscale = {
+      enable = true;
+      useRoutingFeatures = "server";
+    };
   };
 
   system.stateVersion = "25.11";
@@ -45,4 +61,3 @@
     '';
   };
 }
-

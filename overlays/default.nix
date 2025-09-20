@@ -7,5 +7,8 @@ in
     inherit (unstable)
       gemini-cli;
   })
+  (_: _: {
+    serena = inputs.serena.packages.${system}.default;
+  })
 ]
 
