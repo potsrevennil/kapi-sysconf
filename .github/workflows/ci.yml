@@ -47,6 +47,12 @@ jobs:
   # Real builds of every host/profile the flake produces. odroid targets
   # aarch64-linux and runs on GitHub's native arm64 runner (free on public
   # repos) rather than x86_64 + QEMU emulation.
+  #
+  # These closures are large (a full NixOS/darwin system), and most of that
+  # closure already substitutes from cache.nixos.org -- letting magic-nix-cache
+  # try to re-upload all of it to the GHA cache hits that API's rate limit and
+  # crowds out the few paths (e.g. the kapi-vim overlay derivation) actually
+  # worth caching there, so GHA caching is disabled for this job.
   build:
     needs: flake-check
     strategy:
@@ -69,4 +75,6 @@ jobs:
         with:
           submodules: recursive
       - uses: ./.github/actions/install-nix
+        with:
+          use-gha-cache: disabled
       - run: nix build .#${{ matrix.target }} --print-build-logs
