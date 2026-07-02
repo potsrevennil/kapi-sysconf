@@ -49,13 +49,14 @@ jobs:
   # repos) rather than x86_64 + QEMU emulation.
   #
   # The home-manager target builds thing-hanlim-ci, not the real deployed
-  # thing-hanlim: it's identical except kapi-vim's lite = true, which skips
-  # the haskell/lean toolchain (GHC + haskell-language-server for this
-  # specific package pin routinely isn't covered by cache.nixos.org, forcing
-  # a slow local compile). Everything else in this flake is a stock nixpkgs
-  # package and substitutes straight from cache.nixos.org, so there's nothing
-  # here worth caching across CI runs -- magic-nix-cache isn't used anywhere
-  # in this workflow.
+  # thing-hanlim: it's identical except kapi-vim's lite = true (skips
+  # haskell/lean/python/etc -- those toolchains for these specific package
+  # pins routinely aren't covered by cache.nixos.org, forcing slow local
+  # compiles) and targets aarch64-linux instead of aarch64-darwin, since
+  # Hydra's Linux cache coverage is far more complete. Everything else in
+  # this flake is a stock nixpkgs package and substitutes straight from
+  # cache.nixos.org, so there's nothing here worth caching across CI runs --
+  # magic-nix-cache isn't used anywhere in this workflow.
   build:
     needs: flake-check
     strategy:
@@ -66,7 +67,7 @@ jobs:
             runs-on: macos-14
             target: darwinConfigurations.wisdom-root-m4.system
           - name: home-manager (thing-hanlim-ci)
-            runs-on: macos-14
+            runs-on: ubuntu-24.04-arm
             target: homeConfigurations.thing-hanlim-ci.activationPackage
           - name: nixos (odroid)
             runs-on: ubuntu-24.04-arm

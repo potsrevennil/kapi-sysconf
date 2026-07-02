@@ -38,11 +38,16 @@
         );
 
         # CI-only: same config as thing-hanlim, but with kapi-vim's lite = true
-        # so CI doesn't have to build the haskell/lean toolchain (GHC +
-        # haskell-language-server for this specific package pin routinely
-        # isn't covered by cache.nixos.org, forcing a slow local compile).
-        # Not used for the real deployed system.
-        thing-hanlim-ci = withSystem "aarch64-darwin" (ctx:
+        # (skips haskell/lean/python/etc toolchains -- GHC, haskell-language-server,
+        # and the python-lsp-server ecosystem for these specific package pins
+        # routinely aren't covered by cache.nixos.org, forcing slow local
+        # compiles) and built for aarch64-linux instead of aarch64-darwin,
+        # since Hydra's Linux binary cache coverage is far more complete than
+        # macOS's for these packages. home.nix is already OS-portable
+        # (handles isDarwin/isLinux for homeDirectory), and nothing else it
+        # references is Darwin-specific. Not used for the real deployed
+        # system.
+        thing-hanlim-ci = withSystem "aarch64-linux" (ctx:
           inputs.home-manager.lib.homeManagerConfiguration {
             inherit (ctx) pkgs;
 
