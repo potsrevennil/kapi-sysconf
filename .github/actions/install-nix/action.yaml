@@ -5,8 +5,3 @@ runs:
   steps:
     - name: Install Nix
       uses: nixbuild/nix-quick-install-action@v34
-    - name: Prefer cache.nixos.org over GHA cache for nixpkgs paths
-      shell: bash
-      run: |
-        sudo mkdir -p /etc/nix
-        echo "extra-substituters = https://cache.nixos.org?priority=1" | sudo tee -a /etc/nix/nix.conf
