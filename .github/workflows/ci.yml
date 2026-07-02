@@ -25,14 +25,12 @@ jobs:
         with:
           submodules: recursive
       - uses: ./.github/actions/install-nix
-      - run: |
-          nix develop .#ci --command bash -c '
-            set -euo pipefail
-            files=$(find . -name "*.nix" -not -path "./users/home/kapi-vim/*")
-            nixpkgs-fmt --check $files
-            deadnix --fail --exclude users/home/kapi-vim .
-            statix check --ignore "users/home/kapi-vim/**" .
-          '
+      - shell: nix develop .#ci -c bash -e {0}
+        run: |
+          files=$(find . -name "*.nix" -not -path "./users/home/kapi-vim/*")
+          nixpkgs-fmt --check $files
+          deadnix --fail --exclude users/home/kapi-vim .
+          statix check --ignore "users/home/kapi-vim/**" .
 
   # Cheap eval-only pass across every declared system (aarch64-darwin,
   # x86_64-darwin, aarch64-linux, x86_64-linux) — catches syntax/option
