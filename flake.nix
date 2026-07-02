@@ -35,7 +35,7 @@
   outputs = inputs@{ flake-parts, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
     imports = [ ./users ];
     systems = [ "aarch64-darwin" "x86_64-darwin" "aarch64-linux" "x86_64-linux" ];
-    perSystem = { pkgs, lib, system, config, ... }: {
+    perSystem = { pkgs, lib, system, ... }: {
       _module.args.pkgs = import inputs.nixpkgs {
         inherit system;
 
@@ -45,23 +45,6 @@
         };
 
         overlays = import ./overlays { inherit inputs system; };
-      };
-
-      # kapi-vim is the only non-substitutable derivation this flake pulls in
-      # (everything else comes from cache.nixos.org). Match the override used
-      # by users/home.nix's default (lite = false) so CI caches exactly what
-      # the real home-manager config builds.
-      packages.kapi-vim = pkgs.kapi-vim.override {
-        enable_haskell = true;
-        enable_lean = true;
-        enable_typst = true;
-      };
-
-      # Aggregate of every locally-defined package, so CI can populate the
-      # cache for all of them with a single `nix build .#local-pkgs`.
-      packages.local-pkgs = pkgs.symlinkJoin {
-        name = "local-pkgs";
-        paths = builtins.attrValues (builtins.removeAttrs config.packages [ "local-pkgs" ]);
       };
 
       devShells.default =
