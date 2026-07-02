@@ -13,12 +13,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Nix formatting, dead code, and anti-pattern checks. All three tools are
-  # plain nixpkgs packages (devShells.default), so they substitute straight
-  # from cache.nixos.org -- nothing for this job to build or cache. kapi-vim
-  # is a separate repo (git submodule) and is excluded from all three.
-  # nixd (also in devShells.default) is LSP-only and has no batch-check mode,
-  # so it isn't run here -- it's there for editor integration.
+  # Nix formatting, dead code, and anti-pattern checks, run in devShells.ci
+  # (just the lint tools, no editor/interactive-shell extras). All three are
+  # plain nixpkgs packages, so they substitute straight from cache.nixos.org
+  # -- nothing for this job to build or cache. kapi-vim is a separate repo
+  # (git submodule) and is excluded from all three.
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -27,7 +26,7 @@ jobs:
           submodules: recursive
       - uses: ./.github/actions/install-nix
       - run: |
-          nix develop --command bash -c '
+          nix develop .#ci --command bash -c '
             set -euo pipefail
             files=$(find . -name "*.nix" -not -path "./users/home/kapi-vim/*")
             nixpkgs-fmt --check $files

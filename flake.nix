@@ -65,6 +65,19 @@
           '';
         };
 
+      # Lean shell for CI: just the lint/format tools, no editor (nixd) or
+      # interactive-shell (direnv) tooling, so `nix develop .#ci` pulls the
+      # smallest closure the lint job needs.
+      devShells.ci =
+        pkgs.mkShellNoCC {
+          packages = builtins.attrValues {
+            inherit (pkgs)
+              nixpkgs-fmt
+              deadnix
+              statix;
+          };
+        };
+
     };
   };
 }
