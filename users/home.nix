@@ -1,7 +1,13 @@
 { dotfiles
 , username
 , stateVersion
-, lite ? false
+  # Defaults to lite in CI (via $CI, which GitHub Actions always sets) so CI
+  # doesn't need a separate lite-only definition of this config. Reading
+  # $CI requires --impure; without that flag builtins.getEnv silently
+  # returns "", so normal (pure) usage -- e.g. the real deployed
+  # `home-manager switch --flake .` -- is unaffected and always gets the
+  # full config.
+, lite ? (builtins.getEnv "CI" == "true")
 , ...
 }:
 { config
@@ -16,18 +22,24 @@
   };
 
   home = {
-    username = username;
+    inherit username;
     homeDirectory = pkgs.lib.mkMerge [
       (pkgs.lib.mkIf pkgs.stdenv.isDarwin "/Users/${username}")
       (pkgs.lib.mkIf pkgs.stdenv.isLinux "/home/${username}")
     ];
-    stateVersion = stateVersion;
+    inherit stateVersion;
 
     packages = builtins.attrValues {
       kapi-vim = pkgs.kapi-vim.override {
         enable_haskell = ! lite;
         enable_lean = ! lite;
         enable_typst = ! lite;
+        enable_markdown = ! lite;
+        enable_python = ! lite;
+        enable_shell = ! lite;
+        enable_c = ! lite;
+        enable_rust = ! lite;
+        enable_go = ! lite;
       };
 
       inherit (pkgs)
@@ -101,7 +113,7 @@
     };
 
     emacs = {
-      enable = true;
+      enable = ! lite;
       extraPackages = epkgs: with epkgs; [
         lsp-mode
         proof-general

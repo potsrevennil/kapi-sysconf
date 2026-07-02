@@ -1,0 +1,88 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Nix formatting, dead code, and anti-pattern checks, run in devShells.ci
+  # (just the lint tools, no editor/interactive-shell extras). All three are
+  # plain nixpkgs packages, so they substitute straight from cache.nixos.org
+  # -- nothing for this job to build or cache. kapi-vim is a separate repo
+  # (git submodule) and is excluded from all three.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/install-nix
+      - shell: nix develop .#ci -c bash -e {0}
+        run: |
+          files=$(find . -name "*.nix" -not -path "./users/home/kapi-vim/*")
+          nixpkgs-fmt --check $files
+          deadnix --fail --exclude users/home/kapi-vim .
+          statix check --ignore "users/home/kapi-vim/**" .
+
+  # Cheap eval-only pass across every declared system (aarch64-darwin,
+  # x86_64-darwin, aarch64-linux, x86_64-linux) — catches syntax/option
+  # errors before the real builds below spend runner time.
+  flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/install-nix
+      - run: nix flake check --all-systems
+
+  # Real builds of every host/profile the flake produces. odroid targets
+  # aarch64-linux and runs on GitHub's native arm64 runner (free on public
+  # repos) rather than x86_64 + QEMU emulation.
+  #
+  # The home-manager targets build thing-hanlim itself (same definition the
+  # real machine uses) plus thing-hanlim-linux (same config, aarch64-linux,
+  # to check portability). --impure lets home.nix's lite default pick up
+  # $CI, which GitHub Actions always sets, so both automatically skip
+  # kapi-vim's haskell/lean/python/etc toolchains here -- those, for these
+  # specific package pins, routinely aren't covered by cache.nixos.org,
+  # forcing slow local compiles. Real usage (no --impure) is unaffected and
+  # always builds the full config. --impure is a no-op for the darwin/nixos
+  # targets below, which never read $CI. Everything in this flake is a stock
+  # nixpkgs package and substitutes straight from cache.nixos.org, so
+  # there's nothing worth caching across CI runs -- magic-nix-cache isn't
+  # used anywhere in this workflow.
+  build:
+    needs: flake-check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: darwin (wisdom-root-m4)
+            runs-on: macos-14
+            target: darwinConfigurations.wisdom-root-m4.system
+          - name: home-manager (thing-hanlim, linux)
+            runs-on: ubuntu-24.04-arm
+            target: homeConfigurations.thing-hanlim-linux.activationPackage
+          - name: home-manager (thing-hanlim, darwin)
+            runs-on: macos-14
+            target: homeConfigurations.thing-hanlim.activationPackage
+          - name: nixos (odroid)
+            runs-on: ubuntu-24.04-arm
+            target: nixosConfigurations.nixos.config.system.build.toplevel
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/install-nix
+      - run: nix build .#${{ matrix.target }} --print-build-logs --impure
