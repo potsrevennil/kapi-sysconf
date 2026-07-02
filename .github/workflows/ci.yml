@@ -1,0 +1,66 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Cheap eval-only pass across every declared system (aarch64-darwin,
+  # x86_64-darwin, aarch64-linux, x86_64-linux) — catches syntax/option
+  # errors before either of the real builds below spend runner time.
+  flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/install-nix
+      - run: nix flake check --all-systems
+
+  # Real build of the macOS host + home-manager profile, on macOS.
+  darwin:
+    needs: flake-check
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/install-nix
+      - name: Build darwin system (wisdom-root-m4)
+        run: nix build .#darwinConfigurations.wisdom-root-m4.system --print-build-logs
+      - name: Build home-manager activation (thing-hanlim)
+        run: nix build .#homeConfigurations.thing-hanlim.activationPackage --print-build-logs
+
+  # Real build of the odroid NixOS host (flake output currently named
+  # "nixos", matching its networking.hostName). GitHub-hosted Linux
+  # runners are x86_64 only, and this host targets aarch64-linux, so
+  # register QEMU binfmt handlers and let Nix build under emulation for
+  # anything not already substituted from cache.nixos.org. If this proves
+  # too slow in practice, swap the build step for an eval-only check instead:
+  #   nix eval --raw .#nixosConfigurations.nixos.config.system.build.toplevel.drvPath
+  nixos:
+    needs: flake-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/install-nix
+      - name: Register aarch64 emulation
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - name: Allow aarch64-linux builds via QEMU emulation
+        run: |
+          sudo mkdir -p /etc/nix
+          echo "extra-platforms = aarch64-linux" | sudo tee -a /etc/nix/nix.conf
+      - name: Build NixOS system (odroid)
+        run: nix build .#nixosConfigurations.nixos.config.system.build.toplevel --print-build-logs
