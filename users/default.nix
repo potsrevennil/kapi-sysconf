@@ -1,4 +1,23 @@
 { inputs, withSystem, ... }:
+let
+  mkHomeConfig = system: withSystem system (ctx:
+    inputs.home-manager.lib.homeManagerConfiguration {
+      inherit (ctx) pkgs;
+
+      modules = [
+        ({ config, ... }: {
+          imports = [
+            (import ./home.nix {
+              dotfiles = "${config.home.homeDirectory}/Projects/kapi-sysconf/users/home/";
+              username = "thing-hanlim";
+              stateVersion = "24.11";
+            })
+          ];
+        })
+      ];
+    }
+  );
+in
 {
   config = {
     flake = {
@@ -19,52 +38,14 @@
       };
 
       homeConfigurations = {
-        thing-hanlim = withSystem "aarch64-darwin" (ctx:
-          inputs.home-manager.lib.homeManagerConfiguration {
-            inherit (ctx) pkgs;
+        thing-hanlim = mkHomeConfig "aarch64-darwin";
 
-            modules = [
-              ({ config, ... }: {
-                imports = [
-                  (import ./home.nix {
-                    dotfiles = "${config.home.homeDirectory}/Projects/kapi-sysconf/users/home/";
-                    username = "thing-hanlim";
-                    stateVersion = "24.11";
-                  })
-                ];
-              })
-            ];
-          }
-        );
-
-        # CI-only: same config as thing-hanlim, but with kapi-vim's lite = true
-        # (skips haskell/lean/python/etc toolchains -- GHC, haskell-language-server,
-        # and the python-lsp-server ecosystem for these specific package pins
-        # routinely aren't covered by cache.nixos.org, forcing slow local
-        # compiles) and built for aarch64-linux instead of aarch64-darwin,
-        # since Hydra's Linux binary cache coverage is far more complete than
-        # macOS's for these packages. home.nix is already OS-portable
-        # (handles isDarwin/isLinux for homeDirectory), and nothing else it
-        # references is Darwin-specific. Not used for the real deployed
-        # system.
-        thing-hanlim-ci = withSystem "aarch64-linux" (ctx:
-          inputs.home-manager.lib.homeManagerConfiguration {
-            inherit (ctx) pkgs;
-
-            modules = [
-              ({ config, ... }: {
-                imports = [
-                  (import ./home.nix {
-                    dotfiles = "${config.home.homeDirectory}/Projects/kapi-sysconf/users/home/";
-                    username = "thing-hanlim";
-                    stateVersion = "24.11";
-                    lite = true;
-                  })
-                ];
-              })
-            ];
-          }
-        );
+        # CI-only: same config, but aarch64-linux, to also validate it on
+        # Linux -- home.nix is already OS-portable (handles isDarwin/isLinux
+        # for homeDirectory), and Hydra's Linux binary cache coverage is far
+        # more complete than macOS's, so this is fast even without lite. Not
+        # used for the real deployed system.
+        thing-hanlim-linux = mkHomeConfig "aarch64-linux";
       };
 
       nixosConfigurations = {

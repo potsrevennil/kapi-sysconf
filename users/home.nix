@@ -1,7 +1,13 @@
 { dotfiles
 , username
 , stateVersion
-, lite ? false
+  # Defaults to lite in CI (via $CI, which GitHub Actions always sets) so CI
+  # doesn't need a separate lite-only definition of this config. Reading
+  # $CI requires --impure; without that flag builtins.getEnv silently
+  # returns "", so normal (pure) usage -- e.g. the real deployed
+  # `home-manager switch --flake .` -- is unaffected and always gets the
+  # full config.
+, lite ? (builtins.getEnv "CI" == "true")
 , ...
 }:
 { config
