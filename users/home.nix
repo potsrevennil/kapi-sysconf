@@ -16,12 +16,12 @@
   };
 
   home = {
-    username = username;
+    inherit username;
     homeDirectory = pkgs.lib.mkMerge [
       (pkgs.lib.mkIf pkgs.stdenv.isDarwin "/Users/${username}")
       (pkgs.lib.mkIf pkgs.stdenv.isLinux "/home/${username}")
     ];
-    stateVersion = stateVersion;
+    inherit stateVersion;
 
     packages = builtins.attrValues {
       kapi-vim = pkgs.kapi-vim.override {
