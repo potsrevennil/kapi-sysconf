@@ -1,16 +1,5 @@
 name: 'Install Nix'
-description: 'Install Nix and start magic-nix-cache'
-inputs:
-  use-gha-cache:
-    description: >
-      Whether magic-nix-cache should upload build results to the GitHub
-      Actions cache. Disable for jobs that build large closures (e.g. full
-      NixOS/darwin systems) -- most of that closure already substitutes from
-      cache.nixos.org, and trying to re-upload all of it hits the GHA cache
-      API's rate limit and drowns out the few paths (like the kapi-vim
-      overlay derivation) actually worth caching there.
-    default: 'no-preference'
-    required: false
+description: 'Install Nix'
 runs:
   using: 'composite'
   steps:
@@ -21,7 +10,3 @@ runs:
       run: |
         sudo mkdir -p /etc/nix
         echo "extra-substituters = https://cache.nixos.org?priority=1" | sudo tee -a /etc/nix/nix.conf
-    - name: Magic Nix Cache
-      uses: DeterminateSystems/magic-nix-cache-action@v14
-      with:
-        use-gha-cache: ${{ inputs.use-gha-cache }}

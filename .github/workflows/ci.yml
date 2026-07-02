@@ -44,17 +44,54 @@ jobs:
       - uses: ./.github/actions/install-nix
       - run: nix flake check --all-systems
 
+  # Builds packages.<system>.local-pkgs -- the symlinkJoin of every
+  # locally-defined (non-substitutable) derivation, currently just kapi-vim --
+  # once per system, and exports its closure to a plain actions/cache entry
+  # for the build job below to import. Everything else in this flake is a
+  # stock nixpkgs package and substitutes straight from cache.nixos.org, so
+  # this is the only thing worth caching across CI runs; magic-nix-cache is
+  # intentionally not used anywhere in this workflow (see build job below).
+  # Skips the build entirely when nothing that could affect it changed, via
+  # the same cache key acting as a sentinel.
+  cache-deps:
+    needs: flake-check
+    strategy:
+      fail-fast: false
+      matrix:
+        runs-on: [macos-14, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - id: cache
+        uses: actions/cache@v5
+        with:
+          path: /tmp/local-pkgs-store
+          key: local-pkgs-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock', 'flake.nix', 'overlays/**', 'users/home/kapi-vim/**') }}
+      - uses: ./.github/actions/install-nix
+        if: steps.cache.outputs.cache-hit != 'true'
+      - run: nix copy --to file:///tmp/local-pkgs-store .#local-pkgs --print-build-logs
+        if: steps.cache.outputs.cache-hit != 'true'
+
   # Real builds of every host/profile the flake produces. odroid targets
   # aarch64-linux and runs on GitHub's native arm64 runner (free on public
   # repos) rather than x86_64 + QEMU emulation.
   #
-  # These closures are large (a full NixOS/darwin system), and most of that
-  # closure already substitutes from cache.nixos.org -- letting magic-nix-cache
-  # try to re-upload all of it to the GHA cache hits that API's rate limit and
-  # crowds out the few paths (e.g. the kapi-vim overlay derivation) actually
-  # worth caching there, so GHA caching is disabled for this job.
+  # These closures are large (a full NixOS/darwin system): a nix build here
+  # touches roughly a thousand store paths, most substituted from
+  # cache.nixos.org and a few hundred unique-per-config derivations (/etc
+  # files, systemd units, activation scripts) that are never substitutable
+  # from anywhere. magic-nix-cache's upstream-cache filtering doesn't reliably
+  # exclude the substituted ones either (confirmed: cache.nixos.org paths
+  # still got enqueued for upload), so running it here means trying to
+  # write ~1000 cache entries per job and hitting the GHA cache API's rate
+  # limit for effectively no benefit. So magic-nix-cache isn't used anywhere
+  # in this workflow; kapi-vim, the one derivation actually worth reusing
+  # across runs, is imported instead from the plain actions/cache entry
+  # cache-deps just populated.
   build:
-    needs: flake-check
+    needs: cache-deps
     strategy:
       fail-fast: false
       matrix:
@@ -74,7 +111,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
-      - uses: ./.github/actions/install-nix
+      - uses: actions/cache/restore@v5
         with:
-          use-gha-cache: disabled
+          path: /tmp/local-pkgs-store
+          key: local-pkgs-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock', 'flake.nix', 'overlays/**', 'users/home/kapi-vim/**') }}
+      - uses: ./.github/actions/install-nix
+      - run: nix copy --from file:///tmp/local-pkgs-store --all --no-check-sigs
       - run: nix build .#${{ matrix.target }} --print-build-logs
