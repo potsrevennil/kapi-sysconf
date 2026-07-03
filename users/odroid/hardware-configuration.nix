@@ -17,6 +17,10 @@
     initrd = {
       availableKernelModules = [ "nvme" "nvme_core" "phy-rockchip-naneng-combphy" "phy-rockchip-snps-pcie3" ];
     };
+    kernel.sysctl = {
+      "net.ipv4.ip_forward" = "1";
+      "net.ipv6.conf.all.forwarding" = "1";
+    };
     kernelPackages = pkgs.linuxPackages_latest;
     kernelParams = [ "debug" "console=ttyS2,1500000" "root=/dev/nvme0n1p1" "rootfstype=btrfs" ];
     supportedFilesystems = pkgs.lib.mkForce [ "bcachefs" "btrfs" "cifs" "f2fs" "jfs" "ntfs" "reiserfs" "vfat" "xfs" "ext2" ];
@@ -27,11 +31,6 @@
       enable = true;
       name = "rockchip/rk3588s-odroid-m2.dtb";
     };
-  };
-
-  networking = {
-    useDHCP = lib.mkDefault true;
-    networkmanager.enable = true;
   };
 
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
