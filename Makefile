@@ -2,7 +2,7 @@
 
 Q ?= @
 HOST ?= wisdom-root-m4
-NIXOS_HOST ?= odroid
+NIXOS_HOST ?= nixos
 
 all: os home
 
