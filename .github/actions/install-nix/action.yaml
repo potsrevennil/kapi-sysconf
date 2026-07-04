@@ -5,3 +5,15 @@ runs:
   steps:
     - name: Install Nix
       uses: nixbuild/nix-quick-install-action@v34
+
+    # nix-quick-install-action does a single-user install and only enables
+    # nix-command/flakes in the runner user's own nix.conf. Anything run via
+    # `sudo` (e.g. `nix-darwin switch`, which needs root for /etc, launchd,
+    # etc.) runs as root, which doesn't see that per-user config and fails
+    # with "experimental Nix feature 'nix-command' is disabled". Writing it
+    # to /etc/nix/nix.conf makes it apply for every user, root included.
+    - name: Enable flakes system-wide (for sudo'd nix invocations)
+      shell: bash
+      run: |
+        sudo mkdir -p /etc/nix
+        echo "experimental-features = nix-command flakes" | sudo tee -a /etc/nix/nix.conf

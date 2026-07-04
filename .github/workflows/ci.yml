@@ -54,8 +54,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
-      - uses: ./.github/actions/install-nix
-      - run: nix build .#darwinConfigurations.wisdom-root-m4.system --print-build-logs --impure
+      - uses: ./.github/actions/build-flake-target
+        with:
+          target: darwinConfigurations.wisdom-root-m4.system
 
   # Real builds of every other host/profile the flake produces. odroid
   # targets aarch64-linux and runs on GitHub's native arm64 runner (free on
@@ -94,8 +95,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
-      - uses: ./.github/actions/install-nix
-      - run: nix build .#${{ matrix.target }} --print-build-logs --impure
+      - uses: ./.github/actions/build-flake-target
+        with:
+          target: ${{ matrix.target }}
 
   # Experimental: `nix build` only proves the system closure evaluates and
   # builds — it never runs activation scripts, so it can't catch failures in
