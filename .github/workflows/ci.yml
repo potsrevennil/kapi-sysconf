@@ -61,15 +61,16 @@ jobs:
   # there's nothing worth caching across CI runs -- magic-nix-cache isn't
   # used anywhere in this workflow.
   #
-  # The darwin leg additionally sets `switch: true`, which triggers an extra
-  # step below that actually applies darwinConfigurations.ci with `nix run
-  # nix-darwin -- switch` on the same runner. `nix build` alone only proves
-  # the closure evaluates and builds -- it never runs activation scripts, so
-  # it can't catch activation-time failures (permissions, pre-existing
-  # unmanaged files, primaryUser-scoped `defaults write`, etc). That step is
-  # experimental: non-blocking (continue-on-error) and time-boxed while we
-  # find out whether it's fast/reliable enough to keep. If not, just delete
-  # the step (and the darwinConfigurations.ci output).
+  # Any leg can additionally set `switch: true` (plus `switchBin`/
+  # `switchFlake`) to run an extra step that actually applies the config
+  # with `nix run <switchBin> -- switch --flake .#<switchFlake>` on the same
+  # runner -- e.g. nix-darwin for the darwin leg below. `nix build` alone
+  # only proves the closure evaluates and builds -- it never runs activation
+  # scripts, so it can't catch activation-time failures (permissions,
+  # pre-existing unmanaged files, primaryUser-scoped `defaults write`, etc).
+  # That step is experimental: non-blocking (continue-on-error) and
+  # time-boxed while we find out whether it's fast/reliable enough to keep.
+  # If not, just delete the step (and the darwinConfigurations.ci output).
   build:
     needs: flake-check
     strategy:
@@ -80,6 +81,8 @@ jobs:
             runs-on: macos-14
             target: darwinConfigurations.wisdom-root-m4.system
             switch: true
+            switchBin: nix-darwin
+            switchFlake: ci
           - name: home-manager (thing-hanlim, linux)
             runs-on: ubuntu-24.04-arm
             target: homeConfigurations.thing-hanlim-linux.activationPackage
@@ -98,9 +101,9 @@ jobs:
       - uses: ./.github/actions/build-flake-target
         with:
           target: ${{ matrix.target }}
-      - name: darwin switch (experimental)
+      - name: switch (experimental)
         if: matrix.switch
         continue-on-error: true
         timeout-minutes: 15
         run: |
-          time sudo nix run nix-darwin -- switch --flake ".#ci"
+          time sudo nix run ${{ matrix.switchBin }} -- switch --flake ".#${{ matrix.switchFlake }}"
