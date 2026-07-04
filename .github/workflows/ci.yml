@@ -48,6 +48,13 @@ jobs:
   # aarch64-linux and runs on GitHub's native arm64 runner (free on public
   # repos) rather than x86_64 + QEMU emulation.
   #
+  # The darwin leg builds darwinConfigurations.ci rather than wisdom-root-m4
+  # (the actual deployed host): darwin.nix never branches on username, so ci
+  # is build-equivalent to wisdom-root-m4 today, and building ci lets the
+  # switch step below reuse this same ./result instead of building twice. If
+  # darwin.nix ever grows username/host-specific logic, build wisdom-root-m4
+  # here too (or instead).
+  #
   # The home-manager targets build thing-hanlim itself (same definition the
   # real machine uses) plus thing-hanlim-linux (same config, aarch64-linux,
   # to check portability). --impure lets home.nix's lite default pick up
@@ -62,8 +69,8 @@ jobs:
   # used anywhere in this workflow.
   #
   # Any leg can additionally set `switch: true` (plus `switchBin`/
-  # `switchFlake`) to run an extra step that builds darwinConfigurations.
-  # <switchFlake> and applies it via its own <switchBin> binary (e.g.
+  # `switchFlake`) to run an extra step that applies the closure already
+  # built above (via ./result) using its own <switchBin> binary (e.g.
   # darwin-rebuild for the darwin leg below) -- see the step itself for why
   # it doesn't just `nix run nix-darwin -- switch`. `nix build` alone only
   # proves the closure evaluates and builds -- it never runs activation
@@ -78,9 +85,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: darwin (wisdom-root-m4)
+          - name: darwin (ci)
             runs-on: macos-14
-            target: darwinConfigurations.wisdom-root-m4.system
+            target: darwinConfigurations.ci.system
             switch: true
             switchBin: darwin-rebuild
             switchFlake: ci
@@ -111,9 +118,9 @@ jobs:
           # global flake registry (a network fetch of
           # channels.nixos.org/flake-registry.json), which fails under sudo
           # since root's environment isn't set up to trust its TLS cert.
-          # Building our own flake's config directly and running the
-          # switchBin binary it ships (e.g. darwin-rebuild) avoids that
-          # indirection entirely -- everything resolves from our own pinned
-          # flake inputs instead.
-          nix build ".#darwinConfigurations.${{ matrix.switchFlake }}.system" --print-build-logs --impure
+          # ./result (from the build step above, which built this leg's
+          # target -- darwinConfigurations.ci.system for the darwin leg)
+          # already ships its own switchBin binary (e.g. darwin-rebuild), so
+          # invoking it directly avoids that registry indirection entirely
+          # -- everything resolves from our own pinned flake inputs instead.
           time sudo ./result/sw/bin/${{ matrix.switchBin }} switch --flake ".#${{ matrix.switchFlake }}"
