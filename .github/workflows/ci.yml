@@ -44,9 +44,22 @@ jobs:
       - uses: ./.github/actions/install-nix
       - run: nix flake check --all-systems
 
-  # Real builds of every host/profile the flake produces. odroid targets
-  # aarch64-linux and runs on GitHub's native arm64 runner (free on public
-  # repos) rather than x86_64 + QEMU emulation.
+  # Split out from the build matrix below so darwin-switch (which only cares
+  # about the darwin closure) can depend on just this job, not the unrelated
+  # home-manager/nixos legs.
+  build-darwin:
+    needs: flake-check
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/install-nix
+      - run: nix build .#darwinConfigurations.wisdom-root-m4.system --print-build-logs --impure
+
+  # Real builds of every other host/profile the flake produces. odroid
+  # targets aarch64-linux and runs on GitHub's native arm64 runner (free on
+  # public repos) rather than x86_64 + QEMU emulation.
   #
   # The home-manager targets build thing-hanlim itself (same definition the
   # real machine uses) plus thing-hanlim-linux (same config, aarch64-linux,
@@ -55,8 +68,8 @@ jobs:
   # kapi-vim's haskell/lean/python/etc toolchains here -- those, for these
   # specific package pins, routinely aren't covered by cache.nixos.org,
   # forcing slow local compiles. Real usage (no --impure) is unaffected and
-  # always builds the full config. --impure is a no-op for the darwin/nixos
-  # targets below, which never read $CI. Everything in this flake is a stock
+  # always builds the full config. --impure is a no-op for the nixos target
+  # below, which never reads $CI. Everything in this flake is a stock
   # nixpkgs package and substitutes straight from cache.nixos.org, so
   # there's nothing worth caching across CI runs -- magic-nix-cache isn't
   # used anywhere in this workflow.
@@ -66,9 +79,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: darwin (wisdom-root-m4)
-            runs-on: macos-14
-            target: darwinConfigurations.wisdom-root-m4.system
           - name: home-manager (thing-hanlim, linux)
             runs-on: ubuntu-24.04-arm
             target: homeConfigurations.thing-hanlim-linux.activationPackage
@@ -86,3 +96,30 @@ jobs:
           submodules: recursive
       - uses: ./.github/actions/install-nix
       - run: nix build .#${{ matrix.target }} --print-build-logs --impure
+
+  # Experimental: `nix build` only proves the system closure evaluates and
+  # builds — it never runs activation scripts, so it can't catch failures in
+  # activation (permissions, pre-existing unmanaged files, primaryUser-scoped
+  # `defaults write`, etc). This job actually applies the config to see
+  # whether `switch` survives on a disposable macOS runner.
+  #
+  # Only depends on build-darwin (not the home-manager/nixos matrix) so an
+  # unrelated failure there can't block this experiment.
+  #
+  # Kept non-blocking (continue-on-error) and time-boxed while we find out
+  # whether it's fast/reliable enough to keep. If it's consistently slow or
+  # flaky for reasons that don't reflect real failures, delete this job.
+  darwin-switch:
+    name: darwin switch (experimental)
+    needs: build-darwin
+    runs-on: macos-14
+    continue-on-error: true
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/install-nix
+      - name: darwin-rebuild switch
+        run: |
+          time sudo nix run nix-darwin -- switch --flake ".#ci"
