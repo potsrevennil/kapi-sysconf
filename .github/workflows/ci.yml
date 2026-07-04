@@ -62,10 +62,11 @@ jobs:
   # used anywhere in this workflow.
   #
   # Any leg can additionally set `switch: true` (plus `switchBin`/
-  # `switchFlake`) to run an extra step that actually applies the config
-  # with `nix run <switchBin> -- switch --flake .#<switchFlake>` on the same
-  # runner -- e.g. nix-darwin for the darwin leg below. `nix build` alone
-  # only proves the closure evaluates and builds -- it never runs activation
+  # `switchFlake`) to run an extra step that builds darwinConfigurations.
+  # <switchFlake> and applies it via its own <switchBin> binary (e.g.
+  # darwin-rebuild for the darwin leg below) -- see the step itself for why
+  # it doesn't just `nix run nix-darwin -- switch`. `nix build` alone only
+  # proves the closure evaluates and builds -- it never runs activation
   # scripts, so it can't catch activation-time failures (permissions,
   # pre-existing unmanaged files, primaryUser-scoped `defaults write`, etc).
   # That step is experimental: non-blocking (continue-on-error) and
@@ -81,7 +82,7 @@ jobs:
             runs-on: macos-14
             target: darwinConfigurations.wisdom-root-m4.system
             switch: true
-            switchBin: nix-darwin
+            switchBin: darwin-rebuild
             switchFlake: ci
           - name: home-manager (thing-hanlim, linux)
             runs-on: ubuntu-24.04-arm
@@ -106,4 +107,13 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         run: |
-          time sudo nix run ${{ matrix.switchBin }} -- switch --flake ".#${{ matrix.switchFlake }}"
+          # `nix run nix-darwin -- switch` resolves "nix-darwin" through the
+          # global flake registry (a network fetch of
+          # channels.nixos.org/flake-registry.json), which fails under sudo
+          # since root's environment isn't set up to trust its TLS cert.
+          # Building our own flake's config directly and running the
+          # switchBin binary it ships (e.g. darwin-rebuild) avoids that
+          # indirection entirely -- everything resolves from our own pinned
+          # flake inputs instead.
+          nix build ".#darwinConfigurations.${{ matrix.switchFlake }}.system" --print-build-logs --impure
+          time sudo ./result/sw/bin/${{ matrix.switchBin }} switch --flake ".#${{ matrix.switchFlake }}"
