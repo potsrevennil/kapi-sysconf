@@ -123,4 +123,10 @@ jobs:
           # already ships its own switchBin binary (e.g. darwin-rebuild), so
           # invoking it directly avoids that registry indirection entirely
           # -- everything resolves from our own pinned flake inputs instead.
-          time sudo ./result/sw/bin/${{ matrix.switchBin }} switch --flake ".#${{ matrix.switchFlake }}"
+          #
+          # switchBin itself calls bare `nix` internally, but plain `sudo`
+          # replaces PATH with its own secure_path, which doesn't include
+          # wherever nix-quick-install-action put Nix for the runner user --
+          # so root's shell can't find it ("nix: command not found") unless
+          # we explicitly forward the current PATH through sudo.
+          time sudo env "PATH=$PATH" ./result/sw/bin/${{ matrix.switchBin }} switch --flake ".#${{ matrix.switchFlake }}"
