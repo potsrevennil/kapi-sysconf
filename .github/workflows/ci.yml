@@ -100,11 +100,17 @@ jobs:
             #
             # darwin-rebuild re-evaluates the flake itself via its own
             # internal `nix build` call rather than reusing ./result, so it
-            # needs its own --impure too -- without it, ciUsername's
+            # needs its own --impure too -- otherwise ciUsername's
             # builtins.getEnv falls back to "thing-hanlim" for this second,
             # separate evaluation, and activation fails since that user
             # doesn't exist on the runner (only "runner" does).
-            switchCmd: sudo ./result/sw/bin/darwin-rebuild switch --flake ".#wisdom-root-m4" --impure
+            #
+            # sudo resets the environment by default (macOS's env_reset),
+            # so CI/USER never reach that internal build even with --impure
+            # allowing the getEnv calls -- they just read as unset. Forward
+            # them explicitly, capturing the real (non-root) $USER before
+            # sudo would otherwise replace it with "root".
+            switchCmd: sudo env CI=true "USER=$USER" ./result/sw/bin/darwin-rebuild switch --flake ".#wisdom-root-m4" --impure
             switchNeedsEtcCleanup: true
           - name: home-manager (thing-hanlim, linux)
             runs-on: ubuntu-24.04-arm
