@@ -124,9 +124,9 @@ jobs:
           # invoking it directly avoids that registry indirection entirely
           # -- everything resolves from our own pinned flake inputs instead.
           #
-          # switchBin itself calls bare `nix` internally, but plain `sudo`
-          # replaces PATH with its own secure_path, which doesn't include
-          # wherever nix-quick-install-action put Nix for the runner user --
-          # so root's shell can't find it ("nix: command not found") unless
-          # we explicitly forward the current PATH through sudo.
-          time sudo env "PATH=$PATH" ./result/sw/bin/${{ matrix.switchBin }} switch --flake ".#${{ matrix.switchFlake }}"
+          # switchBin calls bare `nix` internally via a hardcoded PATH
+          # rooted at /nix/var/nix/profiles/default/bin (the system-wide
+          # multi-user profile), which install-nix's daemon-mode install
+          # populates -- so this resolves fine as root without any extra
+          # PATH forwarding, unlike with a single-user install.
+          time sudo ./result/sw/bin/${{ matrix.switchBin }} switch --flake ".#${{ matrix.switchFlake }}"
