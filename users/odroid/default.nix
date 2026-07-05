@@ -1,24 +1,12 @@
 { inputs, pkgs, lib, ... }:
-let
-  # See users/default.nix's ciUsername for the same pattern (requires
-  # --impure; GitHub Actions always sets $CI=true). hardware-configuration
-  # and disko.nix are bound to real Odroid M2 hardware (device tree, a
-  # specific NVMe device path, u-boot-style bootloader) that doesn't exist
-  # on a CI runner, so switching a container variant needs them swapped
-  # out for boot.isContainer instead.
-  isCI = builtins.getEnv "CI" == "true";
-in
+
 {
   imports =
-    if isCI
-    then [ ]
-    else [
+    [
       inputs.disko.nixosModules.disko
       ./hardware-configuration.nix
       ./disko.nix
     ];
-
-  boot.isContainer = isCI;
 
   networking = {
     useDHCP = lib.mkForce true;

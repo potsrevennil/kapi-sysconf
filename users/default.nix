@@ -1,10 +1,8 @@
 { inputs, withSystem, ... }:
 let
-  # Defaults to the real machine's user, or the CI runner's actual user
-  # (matching home.nix's `lite` -- see there for why --impure is required)
-  # when built with --impure in CI. This lets darwin/home-manager switch
-  # activate on a GitHub Actions runner (whose user is "runner", not
-  # "thing-hanlim") without a separate ci-only flake output to maintain.
+  # Real user, or the CI runner's user under --impure (mirrors home.nix's
+  # `lite`) -- lets darwin/home-manager switch activate on CI as "runner"
+  # without a separate ci-only flake output.
   ciUsername =
     if builtins.getEnv "CI" == "true"
     then builtins.getEnv "USER"
@@ -52,13 +50,8 @@ in
       homeConfigurations = {
         thing-hanlim = mkHomeConfig { system = "aarch64-darwin"; username = ciUsername; };
 
-        # Same config, but aarch64-linux, to also validate it on Linux --
-        # home.nix is already OS-portable (handles isDarwin/isLinux for
-        # homeDirectory), and Hydra's Linux binary cache coverage is far
-        # more complete than macOS's, so this is fast even without lite.
-        # Only used for real deployment on aarch64-darwin; the aarch64-linux
-        # build exists purely for this portability check (and, like
-        # thing-hanlim, doubles as CI's switch target via ciUsername).
+        # Same config, aarch64-linux, to check portability (home.nix is
+        # OS-portable) and use Hydra's fuller Linux cache coverage.
         thing-hanlim-linux = mkHomeConfig { system = "aarch64-linux"; username = ciUsername; };
       };
 
