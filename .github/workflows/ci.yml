@@ -97,7 +97,14 @@ jobs:
             # /nix/var/nix/profiles/default/bin (the system-wide multi-user
             # profile), which install-nix's daemon-mode install populates,
             # so this resolves fine as root without extra PATH forwarding.
-            switchCmd: sudo ./result/sw/bin/darwin-rebuild switch --flake ".#wisdom-root-m4"
+            #
+            # darwin-rebuild re-evaluates the flake itself via its own
+            # internal `nix build` call rather than reusing ./result, so it
+            # needs its own --impure too -- without it, ciUsername's
+            # builtins.getEnv falls back to "thing-hanlim" for this second,
+            # separate evaluation, and activation fails since that user
+            # doesn't exist on the runner (only "runner" does).
+            switchCmd: sudo ./result/sw/bin/darwin-rebuild switch --flake ".#wisdom-root-m4" --impure
             switchNeedsEtcCleanup: true
           - name: home-manager (thing-hanlim, linux)
             runs-on: ubuntu-24.04-arm
