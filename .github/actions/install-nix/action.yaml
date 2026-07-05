@@ -3,10 +3,9 @@ description: 'Install Nix'
 runs:
   using: 'composite'
   steps:
-    # Multi-user (daemon) install: darwin-rebuild hardcodes daemon-mode
-    # assumptions (NIX_REMOTE=daemon, PATH rooted at the system-wide
-    # /nix/var/nix/profiles/default/bin), which a single-user install can't
-    # satisfy for `sudo darwin-rebuild switch`.
+    # Multi-user (daemon) install: darwin-rebuild assumes NIX_REMOTE=daemon
+    # and a system-wide profile, which single-user installs can't provide
+    # for `sudo darwin-rebuild switch`.
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@v22
 

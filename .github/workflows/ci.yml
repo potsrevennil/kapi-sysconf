@@ -44,20 +44,13 @@ jobs:
       - uses: ./.github/actions/install-nix
       - run: nix flake check --all-systems
 
-  # Real builds of every host/profile the flake produces. odroid runs on
-  # GitHub's native arm64 runner instead of x86_64 + QEMU emulation.
+  # Builds every host/profile. odroid uses GitHub's arm64 runner, not QEMU.
+  # --impure exposes $CI to the flake, so home.nix's `lite` and
+  # users/default.nix's ciUsername adapt for CI without separate outputs.
   #
-  # --impure makes $CI visible to the flake (GitHub Actions always sets
-  # it): home.nix's `lite` default uses it to skip slow-to-build toolchains,
-  # and ciUsername (users/default.nix) uses it so darwin/home-manager build
-  # as the runner's own user, letting the switch steps below activate
-  # wisdom-root-m4/thing-hanlim(-linux) directly instead of needing
-  # separate ci-only outputs. Real usage (no --impure) is unaffected.
-  #
-  # Any leg can set `switch: true` (+ `switchCmd`) to activate the closure
-  # just built, since `nix build` alone can't catch activation-time
-  # failures. darwin's switch is a proven, blocking gate; home-manager's is
-  # new and stays non-blocking (switchContinueOnError) until proven too.
+  # switch: true (+ switchCmd) activates what was just built, since `nix
+  # build` can't catch activation failures. darwin's is a blocking gate;
+  # home-manager's stays non-blocking until proven as reliable.
   build:
     needs: flake-check
     strategy:
@@ -68,22 +61,19 @@ jobs:
             runs-on: macos-14
             target: darwinConfigurations.wisdom-root-m4.system
             switch: true
-            # ./result already ships darwin-rebuild, so we run it directly
-            # instead of `nix run nix-darwin -- switch` (which resolves
-            # "nix-darwin" via the global flake registry -- a network call
-            # that fails under sudo's untrusted TLS store). darwin-rebuild
-            # re-evaluates the flake itself via its own nix build, so it
-            # needs --impure too, plus CI/USER forwarded explicitly since
-            # sudo resets the environment by default (macOS env_reset).
+            # Runs ./result's own darwin-rebuild directly, not `nix run
+            # nix-darwin -- switch` (needs the global flake registry, which
+            # fails under sudo's TLS setup). It re-evaluates via its own nix
+            # build, so needs --impure and CI/USER forwarded -- sudo resets
+            # the environment by default.
             switchCmd: sudo env CI=true "USER=$USER" ./result/sw/bin/darwin-rebuild switch --flake ".#wisdom-root-m4" --impure
             switchNeedsEtcCleanup: true
           - name: home-manager (thing-hanlim, linux)
             runs-on: ubuntu-24.04-arm
             target: homeConfigurations.thing-hanlim-linux.activationPackage
             switch: true
-            # Self-contained, unlike darwin-rebuild: no sudo, no re-eval,
-            # and it force-overwrites conflicting files itself, so it
-            # doesn't need the darwin leg's /etc-cleanup step either.
+            # Self-contained: no sudo, no re-eval, overwrites conflicts
+            # itself -- doesn't need the /etc-cleanup step below either.
             switchCmd: ./result/activate
             switchContinueOnError: true
           - name: home-manager (thing-hanlim, darwin)
@@ -104,16 +94,16 @@ jobs:
       - uses: ./.github/actions/build-flake-target
         with:
           target: ${{ matrix.target }}
-      # nix-darwin refuses to activate over unmanaged /etc files (a safety
-      # check that matters on a real machine). Every CI run is a first-ever
-      # switch on a pristine runner, so this always fires -- unlike on a
-      # real machine, there's nothing here worth preserving.
-      - name: Move aside stock /etc files nix-darwin would refuse to touch
+      # Some switch mechanisms (e.g. nix-darwin) refuse to activate over
+      # unmanaged /etc files -- a safety check that matters on a real
+      # machine, but always fires on CI's pristine, first-switch runners,
+      # where nothing here is worth preserving.
+      - name: Move aside stock /etc files switching would refuse to touch
         if: matrix.switchNeedsEtcCleanup
         run: |
           for f in /etc/shells /etc/zshenv /etc/zshrc /etc/bashrc /etc/zprofile; do
             if [ -e "$f" ] && [ ! -L "$f" ]; then
-              sudo mv "$f" "$f.before-nix-darwin"
+              sudo mv "$f" "$f.before-switch"
             fi
           done
       - name: switch

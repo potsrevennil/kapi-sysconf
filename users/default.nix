@@ -1,8 +1,7 @@
 { inputs, withSystem, ... }:
 let
-  # Real user, or the CI runner's user under --impure (mirrors home.nix's
-  # `lite`) -- lets darwin/home-manager switch activate on CI as "runner"
-  # without a separate ci-only flake output.
+  # Real user, or CI's actual user under --impure (mirrors home.nix's
+  # `lite`) -- avoids a separate ci-only output.
   ciUsername =
     if builtins.getEnv "CI" == "true"
     then builtins.getEnv "USER"
@@ -50,8 +49,8 @@ in
       homeConfigurations = {
         thing-hanlim = mkHomeConfig { system = "aarch64-darwin"; username = ciUsername; };
 
-        # Same config, aarch64-linux, to check portability (home.nix is
-        # OS-portable) and use Hydra's fuller Linux cache coverage.
+        # Same config, aarch64-linux: portability check, plus Hydra's
+        # fuller Linux cache coverage.
         thing-hanlim-linux = mkHomeConfig { system = "aarch64-linux"; username = ciUsername; };
       };
 
