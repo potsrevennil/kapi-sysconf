@@ -48,23 +48,25 @@ jobs:
   # aarch64-linux and runs on GitHub's native arm64 runner (free on public
   # repos) rather than x86_64 + QEMU emulation.
   #
-  # The darwin and home-manager legs below build the `ci` (and `ci-linux`)
-  # flake outputs rather than wisdom-root-m4/thing-hanlim(-linux) (the
-  # actually deployed configs): neither darwin.nix nor home.nix branch on
-  # username, so ci is build-equivalent to the real configs today, and
-  # building ci lets the switch steps below reuse each leg's own ./result
-  # instead of building twice. If either ever grows username/host-specific
-  # logic, build the real attribute here too (or instead).
+  # The darwin and home-manager legs below build wisdom-root-m4/thing-hanlim
+  # (-linux) directly -- the actual deployed configs, not separate ci-only
+  # outputs -- since their username defaults to the CI runner's actual user
+  # (via ciUsername in users/default.nix, mirroring home.nix's `lite`)
+  # whenever built --impure under $CI=true, which build-flake-target always
+  # passes and GitHub Actions always sets. Building the real attribute here
+  # also lets the switch steps below reuse each leg's own ./result instead
+  # of building twice.
   #
-  # --impure lets home.nix's lite default pick up $CI, which GitHub Actions
-  # always sets, so the home-manager legs automatically skip kapi-vim's
-  # haskell/lean/python/etc toolchains -- those, for these specific package
-  # pins, routinely aren't covered by cache.nixos.org, forcing slow local
-  # compiles. Real usage (no --impure) is unaffected and always builds the
-  # full config. --impure is a no-op for the darwin/nixos targets, which
-  # never read $CI. Everything in this flake is a stock nixpkgs package and
-  # substitutes straight from cache.nixos.org, so there's nothing worth
-  # caching across CI runs -- magic-nix-cache isn't used anywhere here.
+  # --impure also lets home.nix's lite default pick up $CI, which GitHub
+  # Actions always sets, so the home-manager legs automatically skip
+  # kapi-vim's haskell/lean/python/etc toolchains -- those, for these
+  # specific package pins, routinely aren't covered by cache.nixos.org,
+  # forcing slow local compiles. Real usage (no --impure) is unaffected and
+  # always builds the full config. --impure is a no-op for the nixos target,
+  # which never reads $CI. Everything in this flake is a stock nixpkgs
+  # package and substitutes straight from cache.nixos.org, so there's
+  # nothing worth caching across CI runs -- magic-nix-cache isn't used
+  # anywhere here.
   #
   # Any leg can additionally set `switch: true` (plus `switchCmd`, the full
   # command to run) to apply the closure already built above (via
@@ -80,9 +82,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: darwin (ci)
+          - name: darwin (wisdom-root-m4)
             runs-on: macos-14
-            target: darwinConfigurations.ci.system
+            target: darwinConfigurations.wisdom-root-m4.system
             switch: true
             # `nix run nix-darwin -- switch` resolves "nix-darwin" through
             # the global flake registry (a network fetch of
@@ -95,11 +97,11 @@ jobs:
             # /nix/var/nix/profiles/default/bin (the system-wide multi-user
             # profile), which install-nix's daemon-mode install populates,
             # so this resolves fine as root without extra PATH forwarding.
-            switchCmd: sudo ./result/sw/bin/darwin-rebuild switch --flake ".#ci"
+            switchCmd: sudo ./result/sw/bin/darwin-rebuild switch --flake ".#wisdom-root-m4"
             switchNeedsEtcCleanup: true
-          - name: home-manager (ci, linux)
+          - name: home-manager (thing-hanlim, linux)
             runs-on: ubuntu-24.04-arm
-            target: homeConfigurations.ci-linux.activationPackage
+            target: homeConfigurations.thing-hanlim-linux.activationPackage
             switch: true
             # Unlike darwin-rebuild, home-manager's activationPackage ships
             # a fully self-contained ./result/activate -- no sudo, no
@@ -108,9 +110,9 @@ jobs:
             # doesn't need the darwin leg's /etc-cleanup step either.
             switchCmd: ./result/activate
             switchContinueOnError: true
-          - name: home-manager (ci, darwin)
+          - name: home-manager (thing-hanlim, darwin)
             runs-on: macos-14
-            target: homeConfigurations.ci.activationPackage
+            target: homeConfigurations.thing-hanlim.activationPackage
             switch: true
             switchCmd: ./result/activate
             switchContinueOnError: true

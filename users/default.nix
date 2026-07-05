@@ -1,5 +1,15 @@
 { inputs, withSystem, ... }:
 let
+  # Defaults to the real machine's user, or the CI runner's actual user
+  # (matching home.nix's `lite` -- see there for why --impure is required)
+  # when built with --impure in CI. This lets darwin/home-manager switch
+  # activate on a GitHub Actions runner (whose user is "runner", not
+  # "thing-hanlim") without a separate ci-only flake output to maintain.
+  ciUsername =
+    if builtins.getEnv "CI" == "true"
+    then builtins.getEnv "USER"
+    else "thing-hanlim";
+
   mkDarwin = { username, hostPlatform ? "aarch64-darwin", stateVersion ? 5 }:
     withSystem hostPlatform (ctx:
       inputs.darwin.lib.darwinSystem {
@@ -36,30 +46,20 @@ in
   config = {
     flake = {
       darwinConfigurations = {
-        wisdom-root-m4 = mkDarwin { username = "thing-hanlim"; };
-
-        # Used by CI to smoke-test `nix run nix-darwin -- switch` on a
-        # macos-latest runner, whose user/home is "runner"/"/Users/runner".
-        ci = mkDarwin { username = "runner"; };
+        wisdom-root-m4 = mkDarwin { username = ciUsername; };
       };
 
       homeConfigurations = {
-        thing-hanlim = mkHomeConfig { system = "aarch64-darwin"; username = "thing-hanlim"; };
+        thing-hanlim = mkHomeConfig { system = "aarch64-darwin"; username = ciUsername; };
 
-        # CI-only: same config, but aarch64-linux, to also validate it on
-        # Linux -- home.nix is already OS-portable (handles isDarwin/isLinux
-        # for homeDirectory), and Hydra's Linux binary cache coverage is far
-        # more complete than macOS's, so this is fast even without lite. Not
-        # used for the real deployed system.
-        thing-hanlim-linux = mkHomeConfig { system = "aarch64-linux"; username = "thing-hanlim"; };
-
-        # CI-only: build-equivalent to thing-hanlim(-linux) -- home.nix never
-        # branches on username beyond home.username/homeDirectory -- but
-        # username "runner" to match the GitHub Actions runner's actual
-        # user, so `home-manager switch` can activate without a username
-        # mismatch. Used by the switch step in ci.yml.
-        ci = mkHomeConfig { system = "aarch64-darwin"; username = "runner"; };
-        ci-linux = mkHomeConfig { system = "aarch64-linux"; username = "runner"; };
+        # Same config, but aarch64-linux, to also validate it on Linux --
+        # home.nix is already OS-portable (handles isDarwin/isLinux for
+        # homeDirectory), and Hydra's Linux binary cache coverage is far
+        # more complete than macOS's, so this is fast even without lite.
+        # Only used for real deployment on aarch64-darwin; the aarch64-linux
+        # build exists purely for this portability check (and, like
+        # thing-hanlim, doubles as CI's switch target via ciUsername).
+        thing-hanlim-linux = mkHomeConfig { system = "aarch64-linux"; username = ciUsername; };
       };
 
       nixosConfigurations = {
