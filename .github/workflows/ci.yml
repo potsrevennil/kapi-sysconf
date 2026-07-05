@@ -61,12 +61,13 @@ jobs:
             runs-on: macos-14
             target: darwinConfigurations.wisdom-root-m4.system
             switch: true
-            # Runs ./result's own darwin-rebuild directly, not `nix run
-            # nix-darwin -- switch` (needs the global flake registry, which
-            # fails under sudo's TLS setup). It re-evaluates via its own nix
-            # build, so needs --impure and CI/USER forwarded -- sudo resets
-            # the environment by default.
-            switchCmd: sudo env CI=true "USER=$USER" ./result/sw/bin/darwin-rebuild switch --flake ".#wisdom-root-m4" --impure
+            # Runs ./result's own activate script directly, like the
+            # home-manager legs below, rather than `darwin-rebuild switch`:
+            # darwin-rebuild re-evaluates the flake via its own nix build
+            # (needing --impure/CI/USER re-forwarded through sudo) just to
+            # reach this same activate script, plus registers a rollback
+            # generation we don't care about on a disposable runner.
+            switchCmd: sudo ./result/activate
             switchNeedsEtcCleanup: true
           - name: home-manager (thing-hanlim, linux)
             runs-on: ubuntu-24.04-arm
