@@ -109,6 +109,23 @@ jobs:
       - uses: ./.github/actions/build-flake-target
         with:
           target: ${{ matrix.target }}
+      # nix-darwin refuses to activate over /etc files it doesn't already
+      # manage (a safety check that matters on a real machine, to avoid
+      # clobbering pre-existing config), which on a first-ever switch means
+      # macOS's own stock /etc/shells, /etc/zshenv, etc. Every CI run gets a
+      # pristine runner, so this fires every time, not just once -- unlike
+      # on a real machine, there's nothing here worth preserving, so we can
+      # just move the stock files aside ourselves instead of hand-holding
+      # through it like a first-time human install would.
+      - name: Move aside stock /etc files nix-darwin would refuse to touch
+        if: matrix.switch
+        continue-on-error: true
+        run: |
+          for f in /etc/shells /etc/zshenv /etc/zshrc /etc/bashrc /etc/zprofile; do
+            if [ -e "$f" ] && [ ! -L "$f" ]; then
+              sudo mv "$f" "$f.before-nix-darwin"
+            fi
+          done
       - name: switch (experimental)
         if: matrix.switch
         continue-on-error: true
