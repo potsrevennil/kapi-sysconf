@@ -1,0 +1,12 @@
+name: 'Build flake target'
+description: 'Install Nix and build a flake output attribute'
+inputs:
+  target:
+    description: 'Flake attribute path to build, e.g. darwinConfigurations.foo.system'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - uses: ./.github/actions/install-nix
+    - shell: bash
+      run: nix build ".#${{ inputs.target }}" --print-build-logs --impure

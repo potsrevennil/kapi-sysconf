@@ -1,6 +1,28 @@
 { inputs, withSystem, ... }:
 let
-  mkHomeConfig = system: withSystem system (ctx:
+  # Real user, or CI's actual user under --impure (mirrors home.nix's
+  # `lite`) -- avoids a separate ci-only output.
+  ciUsername =
+    if builtins.getEnv "CI" == "true"
+    then builtins.getEnv "USER"
+    else "thing-hanlim";
+
+  mkDarwin = { username, hostPlatform ? "aarch64-darwin", stateVersion ? 5 }:
+    withSystem hostPlatform (ctx:
+      inputs.darwin.lib.darwinSystem {
+        inherit (ctx) system pkgs;
+        modules = [
+          (_: {
+            system.stateVersion = stateVersion;
+            system.primaryUser = username;
+          })
+
+          ./darwin.nix
+        ];
+      }
+    );
+
+  mkHomeConfig = { system, username, stateVersion ? "24.11" }: withSystem system (ctx:
     inputs.home-manager.lib.homeManagerConfiguration {
       inherit (ctx) pkgs;
 
@@ -9,8 +31,7 @@ let
           imports = [
             (import ./home.nix {
               dotfiles = "${config.home.homeDirectory}/Projects/kapi-sysconf/users/home/";
-              username = "thing-hanlim";
-              stateVersion = "24.11";
+              inherit username stateVersion;
             })
           ];
         })
@@ -22,30 +43,15 @@ in
   config = {
     flake = {
       darwinConfigurations = {
-        wisdom-root-m4 = withSystem "aarch64-darwin" (ctx:
-          inputs.darwin.lib.darwinSystem {
-            inherit (ctx) system pkgs;
-            modules = [
-              (_: {
-                system.stateVersion = 5;
-                system.primaryUser = "thing-hanlim";
-              })
-
-              ./darwin.nix
-            ];
-          }
-        );
+        wisdom-root-m4 = mkDarwin { username = ciUsername; };
       };
 
       homeConfigurations = {
-        thing-hanlim = mkHomeConfig "aarch64-darwin";
+        thing-hanlim = mkHomeConfig { system = "aarch64-darwin"; username = ciUsername; };
 
-        # CI-only: same config, but aarch64-linux, to also validate it on
-        # Linux -- home.nix is already OS-portable (handles isDarwin/isLinux
-        # for homeDirectory), and Hydra's Linux binary cache coverage is far
-        # more complete than macOS's, so this is fast even without lite. Not
-        # used for the real deployed system.
-        thing-hanlim-linux = mkHomeConfig "aarch64-linux";
+        # Same config, aarch64-linux: portability check, plus Hydra's
+        # fuller Linux cache coverage.
+        thing-hanlim-linux = mkHomeConfig { system = "aarch64-linux"; username = ciUsername; };
       };
 
       nixosConfigurations = {

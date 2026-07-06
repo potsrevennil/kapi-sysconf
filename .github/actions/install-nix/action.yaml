@@ -3,5 +3,16 @@ description: 'Install Nix'
 runs:
   using: 'composite'
   steps:
+    # Multi-user (daemon) install: darwin-rebuild assumes NIX_REMOTE=daemon
+    # and a system-wide profile, which single-user installs can't provide
+    # for `sudo darwin-rebuild switch`.
     - name: Install Nix
-      uses: nixbuild/nix-quick-install-action@v34
+      uses: DeterminateSystems/nix-installer-action@v22
+
+    # Belt-and-suspenders: the installer already does this, but we don't
+    # want to depend on that staying true.
+    - name: Enable flakes system-wide (for sudo'd nix invocations)
+      shell: bash
+      run: |
+        sudo mkdir -p /etc/nix
+        echo "experimental-features = nix-command flakes" | sudo tee -a /etc/nix/nix.conf

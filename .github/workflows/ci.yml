@@ -44,22 +44,14 @@ jobs:
       - uses: ./.github/actions/install-nix
       - run: nix flake check --all-systems
 
-  # Real builds of every host/profile the flake produces. odroid targets
-  # aarch64-linux and runs on GitHub's native arm64 runner (free on public
-  # repos) rather than x86_64 + QEMU emulation.
+  # Builds every host/profile. odroid uses GitHub's arm64 runner, not QEMU.
+  # --impure exposes $CI to the flake, so home.nix's `lite` and
+  # users/default.nix's ciUsername adapt for CI without separate outputs.
   #
-  # The home-manager targets build thing-hanlim itself (same definition the
-  # real machine uses) plus thing-hanlim-linux (same config, aarch64-linux,
-  # to check portability). --impure lets home.nix's lite default pick up
-  # $CI, which GitHub Actions always sets, so both automatically skip
-  # kapi-vim's haskell/lean/python/etc toolchains here -- those, for these
-  # specific package pins, routinely aren't covered by cache.nixos.org,
-  # forcing slow local compiles. Real usage (no --impure) is unaffected and
-  # always builds the full config. --impure is a no-op for the darwin/nixos
-  # targets below, which never read $CI. Everything in this flake is a stock
-  # nixpkgs package and substitutes straight from cache.nixos.org, so
-  # there's nothing worth caching across CI runs -- magic-nix-cache isn't
-  # used anywhere in this workflow.
+  # switch: true (+ switchCmd) activates what was just built, since `nix
+  # build` can't catch activation failures. Blocking by default
+  # (switchContinueOnError opts a leg out while its switch is still
+  # unproven) -- a check that can silently fail forever isn't a check.
   build:
     needs: flake-check
     strategy:
@@ -69,12 +61,29 @@ jobs:
           - name: darwin (wisdom-root-m4)
             runs-on: macos-14
             target: darwinConfigurations.wisdom-root-m4.system
+            switch: true
+            # Runs ./result's own activate script directly, like the
+            # home-manager legs below, rather than `darwin-rebuild switch`:
+            # darwin-rebuild re-evaluates the flake via its own nix build
+            # (needing --impure/CI/USER re-forwarded through sudo) just to
+            # reach this same activate script, plus registers a rollback
+            # generation we don't care about on a disposable runner.
+            switchCmd: sudo ./result/activate
           - name: home-manager (thing-hanlim, linux)
             runs-on: ubuntu-24.04-arm
             target: homeConfigurations.thing-hanlim-linux.activationPackage
+            switch: true
+            # Self-contained: no sudo, no re-eval. HOME_MANAGER_BACKUP_EXT
+            # tells it to back up conflicting pre-existing files (the
+            # runner's stock ~/.bashrc etc.) instead of refusing to
+            # activate -- the standalone-mode equivalent of `home-manager
+            # switch -b backup`.
+            switchCmd: HOME_MANAGER_BACKUP_EXT=backup ./result/activate
           - name: home-manager (thing-hanlim, darwin)
             runs-on: macos-14
             target: homeConfigurations.thing-hanlim.activationPackage
+            switch: true
+            switchCmd: HOME_MANAGER_BACKUP_EXT=backup ./result/activate
           - name: nixos (odroid)
             runs-on: ubuntu-24.04-arm
             target: nixosConfigurations.nixos.config.system.build.toplevel
@@ -84,5 +93,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
-      - uses: ./.github/actions/install-nix
-      - run: nix build .#${{ matrix.target }} --print-build-logs --impure
+      - uses: ./.github/actions/build-flake-target
+        with:
+          target: ${{ matrix.target }}
+      - name: switch
+        if: matrix.switch
+        continue-on-error: ${{ matrix.switchContinueOnError == true }}
+        timeout-minutes: 15
+        run: time ${{ matrix.switchCmd }}
