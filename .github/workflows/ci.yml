@@ -68,7 +68,6 @@ jobs:
             # reach this same activate script, plus registers a rollback
             # generation we don't care about on a disposable runner.
             switchCmd: sudo ./result/activate
-            switchNeedsEtcCleanup: true
           - name: home-manager (thing-hanlim, linux)
             runs-on: ubuntu-24.04-arm
             target: homeConfigurations.thing-hanlim-linux.activationPackage
@@ -77,8 +76,7 @@ jobs:
             # tells it to back up conflicting pre-existing files (the
             # runner's stock ~/.bashrc etc.) instead of refusing to
             # activate -- the standalone-mode equivalent of `home-manager
-            # switch -b backup`, so it doesn't need the darwin leg's
-            # /etc-cleanup step either.
+            # switch -b backup`.
             switchCmd: HOME_MANAGER_BACKUP_EXT=backup ./result/activate
             switchContinueOnError: true
           - name: home-manager (thing-hanlim, darwin)
@@ -99,18 +97,6 @@ jobs:
       - uses: ./.github/actions/build-flake-target
         with:
           target: ${{ matrix.target }}
-      # Some switch mechanisms (e.g. nix-darwin) refuse to activate over
-      # unmanaged /etc files -- a safety check that matters on a real
-      # machine, but always fires on CI's pristine, first-switch runners,
-      # where nothing here is worth preserving.
-      - name: Move aside stock /etc files switching would refuse to touch
-        if: matrix.switchNeedsEtcCleanup
-        run: |
-          for f in /etc/shells /etc/zshenv /etc/zshrc /etc/bashrc /etc/zprofile; do
-            if [ -e "$f" ] && [ ! -L "$f" ]; then
-              sudo mv "$f" "$f.before-switch"
-            fi
-          done
       - name: switch
         if: matrix.switch
         continue-on-error: ${{ matrix.switchContinueOnError == true }}
