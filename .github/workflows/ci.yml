@@ -49,8 +49,9 @@ jobs:
   # users/default.nix's ciUsername adapt for CI without separate outputs.
   #
   # switch: true (+ switchCmd) activates what was just built, since `nix
-  # build` can't catch activation failures. darwin's is a blocking gate;
-  # home-manager's stays non-blocking until proven as reliable.
+  # build` can't catch activation failures. Blocking by default
+  # (switchContinueOnError opts a leg out while its switch is still
+  # unproven) -- a check that can silently fail forever isn't a check.
   build:
     needs: flake-check
     strategy:
@@ -78,13 +79,11 @@ jobs:
             # activate -- the standalone-mode equivalent of `home-manager
             # switch -b backup`.
             switchCmd: HOME_MANAGER_BACKUP_EXT=backup ./result/activate
-            switchContinueOnError: true
           - name: home-manager (thing-hanlim, darwin)
             runs-on: macos-14
             target: homeConfigurations.thing-hanlim.activationPackage
             switch: true
             switchCmd: HOME_MANAGER_BACKUP_EXT=backup ./result/activate
-            switchContinueOnError: true
           - name: nixos (odroid)
             runs-on: ubuntu-24.04-arm
             target: nixosConfigurations.nixos.config.system.build.toplevel
