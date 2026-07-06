@@ -73,15 +73,19 @@ jobs:
             runs-on: ubuntu-24.04-arm
             target: homeConfigurations.thing-hanlim-linux.activationPackage
             switch: true
-            # Self-contained: no sudo, no re-eval, overwrites conflicts
-            # itself -- doesn't need the /etc-cleanup step below either.
-            switchCmd: ./result/activate
+            # Self-contained: no sudo, no re-eval. HOME_MANAGER_BACKUP_EXT
+            # tells it to back up conflicting pre-existing files (the
+            # runner's stock ~/.bashrc etc.) instead of refusing to
+            # activate -- the standalone-mode equivalent of `home-manager
+            # switch -b backup`, so it doesn't need the darwin leg's
+            # /etc-cleanup step either.
+            switchCmd: HOME_MANAGER_BACKUP_EXT=backup ./result/activate
             switchContinueOnError: true
           - name: home-manager (thing-hanlim, darwin)
             runs-on: macos-14
             target: homeConfigurations.thing-hanlim.activationPackage
             switch: true
-            switchCmd: ./result/activate
+            switchCmd: HOME_MANAGER_BACKUP_EXT=backup ./result/activate
             switchContinueOnError: true
           - name: nixos (odroid)
             runs-on: ubuntu-24.04-arm
