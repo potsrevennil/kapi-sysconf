@@ -7,7 +7,7 @@ let
     then builtins.getEnv "USER"
     else "thing-hanlim";
 
-  mkHomeConfig = { system, username, stateVersion ? "24.11" }: withSystem system (ctx:
+  mkHomeConfig = { system, username, stateVersion ? "25.05" }: withSystem system (ctx:
     inputs.home-manager.lib.homeManagerConfiguration {
       inherit (ctx) pkgs;
 
