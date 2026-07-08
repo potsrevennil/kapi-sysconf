@@ -34,12 +34,13 @@
         enable_haskell = ! lite;
         enable_lean = ! lite;
         enable_typst = ! lite;
-        enable_markdown = ! lite;
+        enable_config = ! lite;
         enable_python = ! lite;
         enable_shell = ! lite;
         enable_c = ! lite;
         enable_rust = ! lite;
         enable_go = ! lite;
+        enable_js = ! lite;
       };
 
       inherit (pkgs)

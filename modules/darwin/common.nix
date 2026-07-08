@@ -41,7 +41,6 @@
       alacritty
       libsixel
       raycast
-      arc-browser
     ];
   };
 
