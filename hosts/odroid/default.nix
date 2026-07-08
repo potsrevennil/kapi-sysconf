@@ -1,4 +1,4 @@
-{ inputs, pkgs, lib, ... }:
+{ inputs, lib, pkgs, ... }:
 
 {
   imports =
@@ -33,31 +33,12 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [ git vim neovim wireguard-tools ];
+  services.openssh.settings.PermitRootLogin = "yes";
 
-
-  programs.zsh = {
+  services.tailscale = {
     enable = true;
-    promptInit = "";
-  };
-
-  services = {
-    openssh = {
-      enable = true;
-      settings.PermitRootLogin = "yes";
-    };
-    tailscale = {
-      enable = true;
-      useRoutingFeatures = "server";
-    };
+    useRoutingFeatures = "server";
   };
 
   system.stateVersion = "25.11";
-
-  nix = {
-    package = pkgs.nixVersions.stable;
-    extraOptions = ''
-      experimental-features = nix-command flakes
-    '';
-  };
 }
