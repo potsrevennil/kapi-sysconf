@@ -61,7 +61,7 @@
           };
 
           shellHook = ''
-            export PATH=$PWD/bin:$PATH
+            export PATH=$PWD/scripts:$PATH
           '';
         };
 
