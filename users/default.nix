@@ -79,7 +79,32 @@ in
             ];
           }
         ))
-        nixosHosts;
+        nixosHosts
+      // {
+        # Bring-up config for the odroid host (builds a flashable image from
+        # scratch) -- deliberately not part of nixosHosts/the generator above:
+        # it needs its own overlay (ubootOdroidM2/rkbin) that no other host
+        # should pick up, and it's not something anyone should ever
+        # `nixos-rebuild switch` against, so it gets a name that can't be
+        # confused with the real, deployed `nixosConfigurations.nixos`.
+        odroid-image = withSystem "aarch64-linux" (ctx:
+          inputs.nixpkgs.lib.nixosSystem {
+            inherit (ctx) system;
+            specialArgs = { inherit inputs; };
+            modules = [
+              {
+                nixpkgs.overlays = [
+                  (final: prev: {
+                    rkbin = prev.callPackage ../hosts/odroid/image/rkbin.nix { rkbin = prev.rkbin; };
+                    ubootOdroidM2 = prev.callPackage ../hosts/odroid/image/uboot.nix { uboot-src = inputs.uboot-src; };
+                  })
+                ];
+              }
+              ../hosts/odroid/image
+            ];
+          }
+        );
+      };
     };
   };
 }
