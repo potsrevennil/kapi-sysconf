@@ -7,10 +7,43 @@
   imports = [
     inputs.disko.nixosModules.disko
     "${inputs.nixos-hardware}/rockchip"
-    "${inputs.nixos-hardware}/rockchip/disko.nix"
   ];
 
-  disko.devices.disk.main.imageSize = "3G";
+  # nixos-hardware's own rockchip/disko.nix formats the root partition as
+  # bcachefs, which nixos-26.05's linuxPackages_latest (7.1.2) doesn't build
+  # a module for at all -- bcachefs's relationship with mainline has been
+  # rocky, this isn't guaranteed to stay working across kernel bumps even
+  # when it does. Not worth chasing: nothing in this repo actually needs
+  # bcachefs (the day-2 config uses btrfs everywhere), so this is our own
+  # minimal reimplementation of that module's disk layout with btrfs instead.
+  disko.devices.disk.main = {
+    type = "disk";
+    imageSize = "3G";
+    content = {
+      type = "gpt";
+      partitions = {
+        ESP = {
+          type = "EF00";
+          start = "16M";
+          size = "500M";
+          content = {
+            type = "filesystem";
+            format = "vfat";
+            mountpoint = "/boot";
+            mountOptions = [ "umask=0022" ];
+          };
+        };
+        root = {
+          size = "100%";
+          content = {
+            type = "filesystem";
+            format = "btrfs";
+            mountpoint = "/";
+          };
+        };
+      };
+    };
+  };
 
   nix = {
     package = pkgs.nixVersions.stable;
