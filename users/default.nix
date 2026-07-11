@@ -95,8 +95,8 @@ in
               {
                 nixpkgs.overlays = [
                   (final: prev: {
-                    rkbin = prev.callPackage ../hosts/odroid/image/rkbin.nix { rkbin = prev.rkbin; };
-                    ubootOdroidM2 = prev.callPackage ../hosts/odroid/image/uboot.nix { uboot-src = inputs.uboot-src; };
+                    rkbin = prev.callPackage ../hosts/odroid/image/rkbin.nix { inherit (prev) rkbin; };
+                    ubootOdroidM2 = prev.callPackage ../hosts/odroid/image/uboot.nix { inherit (inputs) uboot-src; };
                   })
                 ];
               }
