@@ -105,12 +105,20 @@ jobs:
   # odroid-image involves real custom builds (a patched u-boot cross-build,
   # the RK3588S kernel/device-tree) that cache.nixos.org has no reason to
   # carry -- unlike everything else in this workflow, worth an explicit
-  # cache. Split in two, mirroring wisroot/pqsca's cache-deps pattern: this
-  # job is the only one that *builds* (gated by a content-hash sentinel, so
-  # it skips entirely once a given flake.lock/hosts/odroid/image state has
-  # already been cached -- cold builds run ~45-50min, warm ones ~7-8min).
+  # cache. Gated by a content-hash sentinel, so it skips entirely once a
+  # given flake.lock/hosts/odroid/image state has already been cached.
   # magic-nix-cache-action uploads whatever it builds to the GHA cache.
-  cache-odroid-image:
+  #
+  # Builds config.system.build.toplevel, not the actual disko image
+  # (config.system.build.diskoImages/diskoImagesScript) -- disko's image
+  # assembly boots its own internal QEMU VM running the target's aarch64
+  # kernel, and GitHub's hosted arm64 runners don't expose /dev/kvm for ARM
+  # guests at all (confirmed: this hung for the full 6h job timeout without
+  # erroring, pure TCG software emulation). toplevel still builds the same
+  # expensive custom derivations (kernel, u-boot, rkbin) without needing a
+  # VM, so it's still real, meaningful validation -- just not the literal
+  # flashable image. Producing that stays a manual/local/on-target thing.
+  odroid-image:
     needs: flake-check
     runs-on: ubuntu-24.04-arm
     permissions:
@@ -136,7 +144,7 @@ jobs:
       - name: Build odroid-image
         if: steps.install-nix.conclusion == 'success'
         run: |
-          time nix build .#nixosConfigurations.odroid-image.config.system.build.diskoImagesScript --impure --print-build-logs
+          time nix build .#nixosConfigurations.odroid-image.config.system.build.toplevel --print-build-logs
           touch /tmp/odroid-image-cache-sentinel
       - name: Save cache sentinel
         if: steps.install-nix.conclusion == 'success'
@@ -144,22 +152,3 @@ jobs:
         with:
           path: /tmp/odroid-image-cache-sentinel
           key: odroid-image-${{ runner.arch }}-${{ hashFiles('flake.lock', 'hosts/odroid/image/**') }}
-
-  # Only ever reads: runs regardless of whether cache-odroid-image did fresh
-  # work this time, so a cache hit still gets end-to-end validated -- pulls
-  # whatever's cached (fast) and actually runs the disko script to produce
-  # the .raw image, the same step nixos-on-odroid-m2's release job used.
-  # No artifact upload/release here, just build validation.
-  odroid-image:
-    needs: cache-odroid-image
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-      - uses: nixbuild/nix-quick-install-action@v34
-      - uses: DeterminateSystems/magic-nix-cache-action@v14
-      - name: Build (should substitute from cache-odroid-image's run)
-        run: time nix build .#nixosConfigurations.odroid-image.config.system.build.diskoImagesScript --impure --print-build-logs
-      - name: Generate the disko image
-        run: sudo ./result --build-memory 4096
