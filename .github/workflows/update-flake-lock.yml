@@ -34,3 +34,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
     with:
       ref: update_flake_lock_action
+    # Don't leak the caller's contents:write / pull-requests:write into the
+    # called CI run; ci.yml's own top-level is contents:read, match it.
+    permissions:
+      contents: read
