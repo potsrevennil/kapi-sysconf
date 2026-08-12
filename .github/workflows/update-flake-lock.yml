@@ -1,0 +1,25 @@
+name: Update flake.lock
+
+# Weekly cadence: fresh enough to catch security bumps without drowning
+# review in churn. Manual dispatch for on-demand runs.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/install-nix
+      # PRs opened by the default GITHUB_TOKEN do NOT trigger on:pull_request
+      # workflows (GitHub anti-recursion). CI will not run automatically on
+      # the bump PR -- see the PR body for the manual kick options.
+      - uses: DeterminateSystems/update-flake-lock@v28
+        with:
+          pr-title: 'chore(deps): weekly flake.lock bump'
