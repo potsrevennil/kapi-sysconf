@@ -8,12 +8,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   update:
     runs-on: ubuntu-latest
+    # Scoped here, not workflow-level: the CI legs below have no business
+    # holding write scope, and inheriting from workflow-level would give
+    # it to them.
+    permissions:
+      contents: write
+      pull-requests: write
     outputs:
       operation: ${{ steps.update.outputs.pull-request-operation }}
     steps:
@@ -27,16 +32,13 @@ jobs:
 
   # Bump PRs opened by the default GITHUB_TOKEN don't fire on:pull_request,
   # so call the same reusable jobs ci.yml uses, against the bump branch.
-  # Each caller job pins its own permissions ceiling so the write scope
-  # this workflow needs for the update step doesn't leak into CI.
+  # No per-job permissions needed: workflow-level contents:read applies.
   lint:
     needs: update
     if: needs.update.outputs.operation == 'created' || needs.update.outputs.operation == 'updated'
     uses: ./.github/workflows/reusable-lint.yml
     with:
       ref: update_flake_lock_action
-    permissions:
-      contents: read
 
   flake-check:
     needs: update
@@ -44,8 +46,6 @@ jobs:
     uses: ./.github/workflows/reusable-flake-check.yml
     with:
       ref: update_flake_lock_action
-    permissions:
-      contents: read
 
   build:
     needs: [update, flake-check]
@@ -53,5 +53,3 @@ jobs:
     uses: ./.github/workflows/reusable-build.yml
     with:
       ref: update_flake_lock_action
-    permissions:
-      contents: read
