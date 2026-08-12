@@ -8,19 +8,6 @@ Personal system configuration, managed with Nix flakes.
 
 Neovim config ([kapi-vim](https://github.com/potsrevennil/kapi-vim)) lives in its own repo, pulled in as both a git submodule and a flake input.
 
-## Layout
-
-```
-flake.nix        Inputs and flake-output plumbing
-users/
-  default.nix    Generates every darwin/home/nixos config from the host lists
-  home.nix       Shared home-manager profile
-  home/          Dotfiles
-modules/         Config shared across hosts: darwin/, nixos/, shells/
-hosts/           Per-machine config
-overlays/        kapi-vim's package overlay
-```
-
 ## Hosts
 
 | Host | Flake output | OS | Arch |
@@ -46,7 +33,3 @@ make bump-kapi-vim  # update kapi-vim submodule + relock its input
 ## The kapi-vim submodule
 
 `users/home/kapi-vim` is wired both as a git submodule (so `xdg.configFile."nvim"` symlinks into a real checkout) and as a local-path flake input following this flake's own `nixpkgs`. Moving the submodule pointer alone isn't enough — `flake.lock` needs relocking too; `make bump-kapi-vim` does both.
-
-## CI
-
-Every push/PR: lint → `nix flake check` → real builds of every host and profile, with darwin and home-manager also activated. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
