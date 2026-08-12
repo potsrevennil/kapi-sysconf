@@ -33,6 +33,8 @@
     };
   };
 
+  environment.systemPackages = with pkgs; [ mmc-utils nvme-cli smartmontools ];
+
   services.openssh.settings.PermitRootLogin = "yes";
 
   services.tailscale = {
