@@ -12,7 +12,10 @@
   boot = {
     loader = {
       grub.enable = false;
-      generic-extlinux-compatible.enable = true;
+      generic-extlinux-compatible = {
+        enable = true;
+        configurationLimit = 10;
+      };
     };
     initrd = {
       availableKernelModules = [ "nvme" "nvme_core" "phy-rockchip-naneng-combphy" "phy-rockchip-snps-pcie3" ];
