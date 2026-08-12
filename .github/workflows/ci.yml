@@ -100,4 +100,6 @@ jobs:
         if: matrix.switch
         continue-on-error: ${{ matrix.switchContinueOnError == true }}
         timeout-minutes: 15
-        run: time ${{ matrix.switchCmd }}
+        # Fail the leg if activation prints a deprecation notice or error,
+        # even when it still exits 0. (pipefail already catches a non-zero exit.)
+        run: time ${{ matrix.switchCmd }} 2>&1 | scripts/check-output
