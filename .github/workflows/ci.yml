@@ -4,6 +4,14 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # Called by update-flake-lock.yml against the bump branch. PRs opened by
+  # the default GITHUB_TOKEN don't trigger on:pull_request (anti-recursion),
+  # so the bump workflow invokes CI directly against its branch instead.
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -24,6 +32,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
+          ref: ${{ inputs.ref || github.ref }}
       - uses: ./.github/actions/install-nix
       - shell: nix develop .#ci -c bash -e {0}
         run: |
@@ -41,6 +50,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
+          ref: ${{ inputs.ref || github.ref }}
       - uses: ./.github/actions/install-nix
       - run: nix flake check --all-systems
 
@@ -93,6 +103,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
+          ref: ${{ inputs.ref || github.ref }}
       - uses: ./.github/actions/build-flake-target
         with:
           target: ${{ matrix.target }}

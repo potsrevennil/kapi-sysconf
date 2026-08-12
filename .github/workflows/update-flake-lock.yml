@@ -14,12 +14,23 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
+    outputs:
+      operation: ${{ steps.update.outputs.pull-request-operation }}
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/install-nix
-      # PRs opened by the default GITHUB_TOKEN do NOT trigger on:pull_request
-      # workflows (GitHub anti-recursion). CI will not run automatically on
-      # the bump PR -- see the PR body for the manual kick options.
       - uses: DeterminateSystems/update-flake-lock@v28
+        id: update
         with:
+          branch: update_flake_lock_action
           pr-title: 'chore(deps): weekly flake.lock bump'
+
+  # Bump PRs opened by the default GITHUB_TOKEN don't fire on:pull_request,
+  # so call CI directly against the bump branch. Checks land on the PR
+  # because they run against its head sha.
+  ci:
+    needs: update
+    if: needs.update.outputs.operation == 'created' || needs.update.outputs.operation == 'updated'
+    uses: ./.github/workflows/ci.yml
+    with:
+      ref: update_flake_lock_action
