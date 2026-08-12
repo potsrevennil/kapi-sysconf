@@ -16,33 +16,42 @@
   # when it does. Not worth chasing: nothing in this repo actually needs
   # bcachefs (the day-2 config uses btrfs everywhere), so this is our own
   # minimal reimplementation of that module's disk layout with btrfs instead.
-  disko.devices.disk.main = {
-    type = "disk";
-    imageSize = "3G";
-    content = {
-      type = "gpt";
-      partitions = {
-        ESP = {
-          type = "EF00";
-          start = "16M";
-          size = "500M";
-          content = {
-            type = "filesystem";
-            format = "vfat";
-            mountpoint = "/boot";
-            mountOptions = [ "umask=0022" ];
+  disko = {
+    devices.disk.main = {
+      type = "disk";
+      imageSize = "3G";
+      content = {
+        type = "gpt";
+        partitions = {
+          ESP = {
+            type = "EF00";
+            start = "16M";
+            size = "500M";
+            content = {
+              type = "filesystem";
+              format = "vfat";
+              mountpoint = "/boot";
+              mountOptions = [ "umask=0022" ];
+            };
           };
-        };
-        root = {
-          size = "100%";
-          content = {
-            type = "filesystem";
-            format = "btrfs";
-            mountpoint = "/";
+          root = {
+            size = "100%";
+            content = {
+              type = "filesystem";
+              format = "btrfs";
+              mountpoint = "/";
+            };
           };
         };
       };
     };
+
+    # nixos-hardware's rockchip/disko.nix (no longer imported) also wired these
+    # two into disko's image builder; without them the built image is
+    # unbootable (u-boot never embedded) and the assembly VM OOMs at the 1024M
+    # default. Its bcachefs `extraRootModules` is deliberately not carried over.
+    imageBuilder.extraPostVM = config.hardware.rockchip.diskoExtraPostVM;
+    memSize = lib.mkDefault 4096;
   };
 
   nix = {
