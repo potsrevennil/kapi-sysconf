@@ -1,0 +1,32 @@
+name: Reusable lint
+
+# Called by ci.yml (normal triggers) and update-flake-lock.yml (bump
+# branch). Nix formatting, dead code, and anti-pattern checks, run in
+# devShells.ci (just the lint tools, no editor/interactive-shell extras).
+# All three are plain nixpkgs packages, so they substitute straight from
+# cache.nixos.org -- nothing for this job to build or cache. kapi-vim is
+# a separate repo (git submodule) and is excluded from all three.
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        required: false
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: ./.github/actions/install-nix
+      - shell: nix develop .#ci -c bash -e {0}
+        run: |
+          files=$(find . -name "*.nix" -not -path "./users/home/kapi-vim/*")
+          nixpkgs-fmt --check $files
+          deadnix --fail --exclude users/home/kapi-vim .
+          statix check --ignore "users/home/kapi-vim/**" .

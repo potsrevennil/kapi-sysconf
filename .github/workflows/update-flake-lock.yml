@@ -26,15 +26,32 @@ jobs:
           pr-title: 'chore(deps): weekly flake.lock bump'
 
   # Bump PRs opened by the default GITHUB_TOKEN don't fire on:pull_request,
-  # so call CI directly against the bump branch. Checks land on the PR
-  # because they run against its head sha.
-  ci:
+  # so call the same reusable jobs ci.yml uses, against the bump branch.
+  # Each caller job pins its own permissions ceiling so the write scope
+  # this workflow needs for the update step doesn't leak into CI.
+  lint:
     needs: update
     if: needs.update.outputs.operation == 'created' || needs.update.outputs.operation == 'updated'
-    uses: ./.github/workflows/ci.yml
+    uses: ./.github/workflows/reusable-lint.yml
     with:
       ref: update_flake_lock_action
-    # Don't leak the caller's contents:write / pull-requests:write into the
-    # called CI run; ci.yml's own top-level is contents:read, match it.
+    permissions:
+      contents: read
+
+  flake-check:
+    needs: update
+    if: needs.update.outputs.operation == 'created' || needs.update.outputs.operation == 'updated'
+    uses: ./.github/workflows/reusable-flake-check.yml
+    with:
+      ref: update_flake_lock_action
+    permissions:
+      contents: read
+
+  build:
+    needs: [update, flake-check]
+    if: needs.update.outputs.operation == 'created' || needs.update.outputs.operation == 'updated'
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      ref: update_flake_lock_action
     permissions:
       contents: read
