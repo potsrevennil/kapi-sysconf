@@ -13,43 +13,13 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    # Scoped here, not workflow-level: the CI legs below have no business
-    # holding write scope, and inheriting from workflow-level would give
-    # it to them.
-    permissions:
-      contents: write
-      pull-requests: write
-    outputs:
-      operation: ${{ steps.update.outputs.pull-request-operation }}
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/install-nix
+      # PAT (not the default GITHUB_TOKEN) so the bump PR fires the normal
+      # on:pull_request trigger in ci.yml. GitHub's anti-recursion rule
+      # suppresses workflow runs from events caused by GITHUB_TOKEN.
       - uses: DeterminateSystems/update-flake-lock@v28
-        id: update
         with:
-          branch: update_flake_lock_action
+          token: ${{ secrets.FLAKE_LOCK_PAT }}
           pr-title: 'chore(deps): weekly flake.lock bump'
-
-  # Bump PRs opened by the default GITHUB_TOKEN don't fire on:pull_request,
-  # so call the same reusable jobs ci.yml uses, against the bump branch.
-  # No per-job permissions needed: workflow-level contents:read applies.
-  lint:
-    needs: update
-    if: needs.update.outputs.operation == 'created' || needs.update.outputs.operation == 'updated'
-    uses: ./.github/workflows/reusable-lint.yml
-    with:
-      ref: update_flake_lock_action
-
-  flake-check:
-    needs: update
-    if: needs.update.outputs.operation == 'created' || needs.update.outputs.operation == 'updated'
-    uses: ./.github/workflows/reusable-flake-check.yml
-    with:
-      ref: update_flake_lock_action
-
-  build:
-    needs: [update, flake-check]
-    if: needs.update.outputs.operation == 'created' || needs.update.outputs.operation == 'updated'
-    uses: ./.github/workflows/reusable-build.yml
-    with:
-      ref: update_flake_lock_action
