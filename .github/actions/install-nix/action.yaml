@@ -78,6 +78,14 @@ runs:
     - name: Sanitise nix.conf
       shell: bash
       run: |
+        # BSD sed (macOS) and GNU sed (Linux) split on -i and -E: BSD
+        # -i requires an extension arg and BRE-only, GNU -i takes no
+        # arg and honours -E. `sed -i.bak -e` works identically on
+        # both, and separate -e clauses sidestep needing ERE.
+        strip() {
+          sed -i.bak -e '/^post-build-hook/d' -e '/^build-provenance-tags/d' "$1"
+          rm -f "$1.bak"
+        }
         for f in \
           "$HOME/.config/nix/nix.conf" \
           "${XDG_CONFIG_HOME:-$HOME/.config}/nix/nix.conf" \
@@ -85,9 +93,9 @@ runs:
           /etc/nix/nix.custom.conf; do
           [ -f "$f" ] || continue
           if [ -w "$f" ]; then
-            sed -i -E '/^(post-build-hook|build-provenance-tags) /d' "$f"
+            strip "$f"
           else
-            sudo sed -i -E '/^(post-build-hook|build-provenance-tags) /d' "$f"
+            sudo bash -c "$(declare -f strip); strip '$f'"
           fi
         done
         if nix config show 2>/dev/null | grep -qE '^post-build-hook = .'; then
@@ -95,11 +103,3 @@ runs:
           nix config show | grep -i post-build-hook >&2
           exit 1
         fi
-        # Debug: hunt for stray build-provenance-tags sources.
-        echo "--- files containing build-provenance-tags ---"
-        sudo grep -rl build-provenance-tags \
-          /etc/nix /nix/etc "$HOME/.config/nix" /Library/Preferences/org.nixos.nix 2>/dev/null || echo "(none found)"
-        echo "--- NIX_CONFIG env ---"
-        [ -n "${NIX_CONFIG:-}" ] && echo "$NIX_CONFIG" || echo "(unset)"
-        echo "--- test nix invocation stderr ---"
-        nix --version 2>&1 | grep -i 'unknown setting' || echo "(no warning)"
