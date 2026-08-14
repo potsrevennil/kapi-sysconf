@@ -59,21 +59,23 @@ runs:
     # upload via scripts/nix-cache-upload; every other job stays a
     # read-only consumer through the substituter Magic Nix Cache leaves
     # registered at http://127.0.0.1:37515.
-    # Magic Nix Cache writes post-build-hook into the user-level Nix
-    # config ($HOME/.config/nix/nix.conf) so Nix auto-uploads every
-    # locally-built path. Its upstream-cache filter is broken in v14 --
-    # it re-uploads paths Nix substituted straight from cache.nixos.org
-    # and blows through the GHA API rate limit on any real closure.
-    # Strip the hook so nothing auto-uploads; cache-deps does its own
+    # post-build-hook: on Linux runners Magic Nix Cache patches this
+    # into $HOME/.config/nix/nix.conf and Nix then auto-uploads every
+    # locally-built path. Its upstream-cache filter is broken in v14
+    # (re-uploads paths substituted from cache.nixos.org), which blows
+    # through the GHA API rate limit on any real closure. Strip the
+    # hook so nothing auto-uploads; cache-deps.yml does its own
     # filtered upload via scripts/nix-cache-upload, every other job
     # stays a read-only consumer through the substituter Magic Nix
     # Cache leaves registered at http://127.0.0.1:37515.
-    # Also strip build-provenance-tags: magic-nix-cache-action writes it
-    # into the user nix.conf, but upstream Nix (installed with
-    # determinate:false) doesn't recognise the setting and warns on
-    # every invocation.
-    - name: Disable magic-nix-cache auto-upload
-      if: runner.os != 'macOS'
+    #
+    # build-provenance-tags: written by magic-nix-cache-action but not
+    # recognised by upstream Nix (installed with determinate:false),
+    # so every nix invocation logs an "unknown setting" warning. Strip
+    # it too. On darwin the same setting shows up (source unclear --
+    # possibly the runner's pre-existing nix.conf), so the strip runs
+    # unconditionally rather than gated on runner.os.
+    - name: Sanitise nix.conf
       shell: bash
       run: |
         for f in \
