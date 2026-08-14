@@ -63,15 +63,9 @@ runs:
       if: runner.os != 'macOS'
       shell: bash
       run: |
-        # Magic Nix Cache writes its hook into /etc/nix/nix.custom.conf
-        # (pulled in by !include from nix.conf), not into nix.conf itself.
-        # Strip from every *.conf under /etc/nix to catch it wherever it
-        # lives, present or future.
-        sudo find /etc/nix -type f -name '*.conf' \
-          -exec sed -i '/^post-build-hook/d' {} +
-        # Sanity-check that Nix agrees the hook is gone.
-        if nix show-config 2>/dev/null | grep -qi '^post-build-hook = .'; then
-          echo "post-build-hook still set:"
-          nix show-config | grep -i post-build-hook
-          exit 1
-        fi
+        echo "--- ls -la /etc/nix ---"
+        sudo ls -la /etc/nix
+        echo "--- grep post-build-hook across /etc/nix ---"
+        sudo grep -rHn post-build-hook /etc/nix || echo "(no matches)"
+        echo "--- effective hook before strip ---"
+        nix config show 2>/dev/null | grep -i post-build-hook || echo "(unset)"
