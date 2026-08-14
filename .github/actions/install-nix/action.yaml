@@ -8,6 +8,17 @@ runs:
     # for `sudo darwin-rebuild switch`.
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@v22
+      with:
+        # Stock Nix, not the Determinate fork. Determinate Nix ships nixd,
+        # which emits a build-events firehose that magic-nix-cache
+        # subscribes to; that firehose fires for substituted paths too, so
+        # upstream-cache exclusion never fires and the GHA cache gets
+        # hammered with paths already on cache.nixos.org (hitting the
+        # per-repo API rate limit mid-run). Stock Nix uses the classical
+        # post-build-hook, which only fires for locally-built paths, so
+        # substitutions from cache.nixos.org are naturally excluded.
+        # Multi-user daemon install is still the installer default.
+        determinate: false
 
     # Belt-and-suspenders: the installer already does this, but we don't
     # want to depend on that staying true.
