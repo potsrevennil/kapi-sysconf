@@ -1,0 +1,21 @@
+name: Lint
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/install-nix
+      - shell: nix develop .#ci -c bash -e {0}
+        run: |
+          files=$(find . -name "*.nix" -not -path "./users/home/kapi-vim/*")
+          nixpkgs-fmt --check $files
+          deadnix --fail --exclude users/home/kapi-vim .
+          statix check --ignore "users/home/kapi-vim/**" .

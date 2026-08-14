@@ -28,5 +28,10 @@ runs:
         sudo mkdir -p /etc/nix
         echo "extra-substituters = https://cache.nixos.org?priority=1" | sudo tee -a /etc/nix/nix.conf
 
+    # macOS runners: magic-nix-cache's post-build-hook path is unreliable on
+    # the darwin daemon, so leave it off and let darwin builds rely on
+    # cache.nixos.org alone. Linux runners still get GHA-cache uploads for
+    # the per-config paths that cache.nixos.org doesn't have.
     - name: Magic Nix Cache
+      if: runner.os != 'macOS'
       uses: DeterminateSystems/magic-nix-cache-action@v14

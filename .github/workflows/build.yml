@@ -1,0 +1,64 @@
+name: Build
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: darwin (wisdom-root-m4)
+            runs-on: macos-14
+            target: darwinConfigurations.wisdom-root-m4.system
+            switch: true
+            switchContinueOnError: false
+            # Runs ./result's own activate script directly, like the
+            # home-manager legs below, rather than `darwin-rebuild switch`:
+            # darwin-rebuild re-evaluates the flake via its own nix build
+            # (needing --impure/CI/USER re-forwarded through sudo) just to
+            # reach this same activate script, plus registers a rollback
+            # generation we don't care about on a disposable runner.
+            switchCmd: sudo ./result/activate
+          - name: home-manager (thing-hanlim, linux)
+            runs-on: ubuntu-24.04-arm
+            target: homeConfigurations.thing-hanlim-linux.activationPackage
+            switch: true
+            switchContinueOnError: false
+            # Self-contained: no sudo, no re-eval. HOME_MANAGER_BACKUP_EXT
+            # tells it to back up conflicting pre-existing files (the
+            # runner's stock ~/.bashrc etc.) instead of refusing to
+            # activate -- the standalone-mode equivalent of `home-manager
+            # switch -b backup`.
+            switchCmd: HOME_MANAGER_BACKUP_EXT=backup ./result/activate
+          - name: home-manager (thing-hanlim, darwin)
+            runs-on: macos-14
+            target: homeConfigurations.thing-hanlim.activationPackage
+            switch: true
+            switchContinueOnError: false
+            switchCmd: HOME_MANAGER_BACKUP_EXT=backup ./result/activate
+          - name: nixos (odroid)
+            runs-on: ubuntu-24.04-arm
+            target: nixosConfigurations.nixos.config.system.build.toplevel
+            switch: false
+            switchContinueOnError: false
+            switchCmd: ""
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/build-flake-target
+        with:
+          target: ${{ matrix.target }}
+      - name: switch
+        if: matrix.switch
+        continue-on-error: ${{ matrix.switchContinueOnError == true }}
+        timeout-minutes: 15
+        # Fail the leg if activation prints a deprecation notice or error,
+        # even when it still exits 0. (pipefail already catches a non-zero exit.)
+        run: time ${{ matrix.switchCmd }} 2>&1 | scripts/check-output

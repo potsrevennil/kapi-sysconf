@@ -1,0 +1,16 @@
+name: Flake check
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/install-nix
+      - run: nix flake check --all-systems
