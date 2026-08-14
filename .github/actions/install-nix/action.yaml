@@ -95,3 +95,10 @@ runs:
           nix config show | grep -i post-build-hook >&2
           exit 1
         fi
+        # Debug: where else could build-provenance-tags live? Only prints
+        # anything if `nix config show` still surfaces the setting.
+        if nix config show 2>&1 | grep -q "unknown setting 'build-provenance-tags'"; then
+          echo "--- searching for stray build-provenance-tags source ---" >&2
+          sudo grep -rl build-provenance-tags /etc/nix /nix/etc "$HOME/.config/nix" 2>/dev/null >&2 || true
+          env | grep -i NIX_CONFIG >&2 || echo "NIX_CONFIG unset" >&2
+        fi
