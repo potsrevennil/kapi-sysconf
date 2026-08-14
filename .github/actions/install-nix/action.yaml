@@ -62,4 +62,9 @@ runs:
     - name: Disable magic-nix-cache auto-upload
       if: runner.os != 'macOS'
       shell: bash
-      run: sudo sed -i '/^post-build-hook/d' /etc/nix/nix.conf
+      run: |
+        sudo sed -i '/^post-build-hook/d' /etc/nix/nix.conf
+        echo "--- /etc/nix/nix.conf ---"
+        cat /etc/nix/nix.conf
+        echo "--- effective post-build-hook ---"
+        nix show-config 2>/dev/null | grep -i post-build-hook || echo "(unset)"
