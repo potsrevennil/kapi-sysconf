@@ -59,16 +59,19 @@ runs:
     # upload via scripts/nix-cache-upload; every other job stays a
     # read-only consumer through the substituter Magic Nix Cache leaves
     # registered at http://127.0.0.1:37515.
+    # Magic Nix Cache writes post-build-hook into the user-level Nix
+    # config ($HOME/.config/nix/nix.conf) so Nix auto-uploads every
+    # locally-built path. Its upstream-cache filter is broken in v14 --
+    # it re-uploads paths Nix substituted straight from cache.nixos.org
+    # and blows through the GHA API rate limit on any real closure.
+    # Strip the hook so nothing auto-uploads; cache-deps does its own
+    # filtered upload via scripts/nix-cache-upload, every other job
+    # stays a read-only consumer through the substituter Magic Nix
+    # Cache leaves registered at http://127.0.0.1:37515.
     - name: Disable magic-nix-cache auto-upload
       if: runner.os != 'macOS'
       shell: bash
       run: |
-        # Magic Nix Cache writes post-build-hook into the user-level
-        # config ($HOME/.config/nix/nix.conf), not /etc/nix/nix.conf.
-        # Strip it from every plausible location so Nix has no hook to
-        # fire after each build. cache-deps.yml does the filtered upload
-        # by hand; every other job stays a read-only consumer through
-        # the substituter Magic Nix Cache leaves registered.
         for f in \
           "$HOME/.config/nix/nix.conf" \
           "${XDG_CONFIG_HOME:-$HOME/.config}/nix/nix.conf" \
@@ -82,7 +85,7 @@ runs:
           fi
         done
         if nix config show 2>/dev/null | grep -qE '^post-build-hook = .'; then
-          echo "post-build-hook still set after strip:"
-          nix config show | grep -i post-build-hook
+          echo "post-build-hook still set after strip:" >&2
+          nix config show | grep -i post-build-hook >&2
           exit 1
         fi
