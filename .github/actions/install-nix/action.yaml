@@ -35,3 +35,7 @@ runs:
     - name: Magic Nix Cache
       if: runner.os != 'macOS'
       uses: DeterminateSystems/magic-nix-cache-action@v14
+      with:
+        # We're not a FlakeHub tenant; opt out explicitly so the action
+        # doesn't log "Unable to authenticate to FlakeHub..." every run.
+        use-flakehub: false
