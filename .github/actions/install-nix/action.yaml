@@ -16,3 +16,17 @@ runs:
       run: |
         sudo mkdir -p /etc/nix
         echo "experimental-features = nix-command flakes" | sudo tee -a /etc/nix/nix.conf
+
+    # Lower priority number = higher preference. Default cache.nixos.org
+    # entry sits at ~40; magic-nix-cache's local proxy at ~30. Pinning
+    # cache.nixos.org at 1 makes it strictly preferred, so the GHA-backed
+    # cache only stores paths cache.nixos.org doesn't have (per-config
+    # toplevel/activationPackage closures). No upstream nixpkgs duplication.
+    - name: Prefer cache.nixos.org over GHA cache
+      shell: bash
+      run: |
+        sudo mkdir -p /etc/nix
+        echo "extra-substituters = https://cache.nixos.org?priority=1" | sudo tee -a /etc/nix/nix.conf
+
+    - name: Magic Nix Cache
+      uses: DeterminateSystems/magic-nix-cache-action@v14
