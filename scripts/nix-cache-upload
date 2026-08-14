@@ -59,6 +59,10 @@ if [ "$n_local" -eq 0 ]; then
   exit 0
 fi
 
-info "Copying to $CACHE_URL"
-printf '%s\n' "$local_paths" | xargs nix copy --to "$CACHE_URL"
+info "Uploading $n_local paths to $CACHE_URL"
+while IFS= read -r p; do
+  [ -z "$p" ] && continue
+  nix copy --to "$CACHE_URL" "$p"
+  info "Uploaded $p"
+done <<< "$local_paths"
 info "Done"

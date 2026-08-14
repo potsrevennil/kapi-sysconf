@@ -68,6 +68,10 @@ runs:
     # filtered upload via scripts/nix-cache-upload, every other job
     # stays a read-only consumer through the substituter Magic Nix
     # Cache leaves registered at http://127.0.0.1:37515.
+    # Also strip build-provenance-tags: magic-nix-cache-action writes it
+    # into the user nix.conf, but upstream Nix (installed with
+    # determinate:false) doesn't recognise the setting and warns on
+    # every invocation.
     - name: Disable magic-nix-cache auto-upload
       if: runner.os != 'macOS'
       shell: bash
@@ -79,9 +83,9 @@ runs:
           /etc/nix/nix.custom.conf; do
           [ -f "$f" ] || continue
           if [ -w "$f" ]; then
-            sed -i '/^post-build-hook/d' "$f"
+            sed -i -E '/^(post-build-hook|build-provenance-tags) /d' "$f"
           else
-            sudo sed -i '/^post-build-hook/d' "$f"
+            sudo sed -i -E '/^(post-build-hook|build-provenance-tags) /d' "$f"
           fi
         done
         if nix config show 2>/dev/null | grep -qE '^post-build-hook = .'; then
