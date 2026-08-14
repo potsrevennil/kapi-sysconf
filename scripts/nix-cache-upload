@@ -32,11 +32,10 @@ CACHE_URL="${MAGIC_NIX_CACHE_URL:-http://127.0.0.1:37515}"
 export UPSTREAM="${NIX_UPSTREAM_CACHE:-https://cache.nixos.org}"
 
 info "Computing closure of $*"
-# --json-format 2 returns {"<path>": {...}}; `keys[]` gives us the
-# paths. (Format 1 was an array of {path, ...} objects; the default is
-# switching, and calling --json without --json-format is deprecated.)
-all_paths="$(nix path-info --recursive --json --json-format 2 "$@" \
-  | jq -r 'keys[] | select(startswith("/nix/store/"))')"
+# nix-store -qR gives one store path per line -- older and stabler
+# than `nix path-info --json`, whose output format has churned twice
+# and whose --json-format flag isn't recognised on every Nix version.
+all_paths="$(nix-store -qR "$@")"
 n_all="$(printf '%s\n' "$all_paths" | grep -c . || true)"
 info "$n_all paths in closure"
 

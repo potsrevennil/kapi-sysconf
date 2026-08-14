@@ -36,7 +36,4 @@ jobs:
         with:
           target: ${{ matrix.target }}
       - name: Push non-upstream paths to GHA cache
-        run: |
-          ls -la ./result ./result-* 2>&1 || true
-          pwd; ls
-          scripts/nix-cache-upload ./result
+        run: scripts/nix-cache-upload ./result
