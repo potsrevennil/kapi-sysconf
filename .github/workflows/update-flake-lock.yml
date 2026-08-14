@@ -6,6 +6,9 @@ on:
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
+  # TEMPORARY: end-to-end smoke test before merge. Remove before landing.
+  push:
+    branches: [ci/weekly-flake-lock-bump]
 
 permissions:
   contents: read
