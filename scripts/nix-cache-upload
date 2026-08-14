@@ -28,26 +28,33 @@ if [ $# -lt 1 ]; then
   exit 2
 fi
 
-export CACHE_URL="${MAGIC_NIX_CACHE_URL:-http://127.0.0.1:37515}"
+CACHE_URL="${MAGIC_NIX_CACHE_URL:-http://127.0.0.1:37515}"
 export UPSTREAM="${NIX_UPSTREAM_CACHE:-https://cache.nixos.org}"
 
-not_on_upstream() {
-  local p="$1"
-  local hash="${p##*/store/}"
-  hash="${hash%%-*}"
-  curl -sf -o /dev/null "$UPSTREAM/${hash}.narinfo" || echo "$p"
-}
-export -f not_on_upstream
-
 info "Computing closure of $*"
-all_paths="$(nix path-info --recursive --json "$@" | jq -r '.[].path')"
+# `.[] | .path // empty` skips any entry without a valid path -- some
+# nix path-info records are keyed by output name with a null .path,
+# and if those slip through, xargs feeds "null" to nix copy which then
+# tries to resolve it as a flake ref (flake:null).
+all_paths="$(nix path-info --recursive --json "$@" \
+  | jq -r '.[] | (.path // empty) | select(startswith("/nix/store/"))')"
 n_all="$(printf '%s\n' "$all_paths" | grep -c . || true)"
 info "$n_all paths in closure"
 
+# Inline the curl check rather than defining a function and relying on
+# export -f: xargs -I{} bash -c spawns bash with -c, which doesn't
+# always pick up exported functions cleanly. UPSTREAM is a plain env
+# var and does propagate.
 info "Filtering paths already on $UPSTREAM"
-local_paths="$(printf '%s\n' "$all_paths" | xargs -P 32 -I{} bash -c 'not_on_upstream "$@"' _ {})"
+# shellcheck disable=SC2016  # expansions in the here-doc are deferred to child bash
+local_paths="$(printf '%s\n' "$all_paths" | xargs -P 32 -I{} bash -c '
+  p="$1"
+  hash="${p##*/store/}"
+  hash="${hash%%-*}"
+  curl -sf -o /dev/null "$UPSTREAM/${hash}.narinfo" || echo "$p"
+' _ {})"
 n_local="$(printf '%s\n' "$local_paths" | grep -c . || true)"
-info "$n_local paths not on $UPSTREAM"
+info "$n_local of $n_all paths not on $UPSTREAM"
 
 if [ "$n_local" -eq 0 ]; then
   info "Nothing to upload"
