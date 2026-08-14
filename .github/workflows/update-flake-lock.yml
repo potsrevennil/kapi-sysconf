@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          submodules: recursive
       - uses: ./.github/actions/install-nix
       # PAT (not the default GITHUB_TOKEN) so the bump PR fires the normal
       # on:pull_request trigger in ci.yml. GitHub's anti-recursion rule
