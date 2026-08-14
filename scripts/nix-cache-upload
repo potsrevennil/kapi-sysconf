@@ -32,12 +32,11 @@ CACHE_URL="${MAGIC_NIX_CACHE_URL:-http://127.0.0.1:37515}"
 export UPSTREAM="${NIX_UPSTREAM_CACHE:-https://cache.nixos.org}"
 
 info "Computing closure of $*"
-# `.[] | .path // empty` skips any entry without a valid path -- some
-# nix path-info records are keyed by output name with a null .path,
-# and if those slip through, xargs feeds "null" to nix copy which then
-# tries to resolve it as a flake ref (flake:null).
-all_paths="$(nix path-info --recursive --json "$@" \
-  | jq -r '.[] | (.path // empty) | select(startswith("/nix/store/"))')"
+# --json-format 2 returns {"<path>": {...}}; `keys[]` gives us the
+# paths. (Format 1 was an array of {path, ...} objects; the default is
+# switching, and calling --json without --json-format is deprecated.)
+all_paths="$(nix path-info --recursive --json --json-format 2 "$@" \
+  | jq -r 'keys[] | select(startswith("/nix/store/"))')"
 n_all="$(printf '%s\n' "$all_paths" | grep -c . || true)"
 info "$n_all paths in closure"
 
