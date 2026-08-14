@@ -35,3 +35,5 @@ jobs:
       - uses: ./.github/actions/build-flake-target
         with:
           target: ${{ matrix.target }}
+      - name: Push non-upstream paths to GHA cache
+        run: scripts/nix-cache-upload ./result

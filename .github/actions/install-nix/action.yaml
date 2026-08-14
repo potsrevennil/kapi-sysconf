@@ -50,3 +50,16 @@ runs:
         # We're not a FlakeHub tenant; opt out explicitly so the action
         # doesn't log "Unable to authenticate to FlakeHub..." every run.
         use-flakehub: false
+
+    # Strip the post-build-hook Magic Nix Cache installs. That hook
+    # auto-uploads every locally-built path to the GHA cache, and its
+    # upstream-cache filter is broken in v14 -- it re-uploads paths Nix
+    # substituted from cache.nixos.org and blows through the GHA API
+    # rate limit on any real closure. cache-deps does its own filtered
+    # upload via scripts/nix-cache-upload; every other job stays a
+    # read-only consumer through the substituter Magic Nix Cache leaves
+    # registered at http://127.0.0.1:37515.
+    - name: Disable magic-nix-cache auto-upload
+      if: runner.os != 'macOS'
+      shell: bash
+      run: sudo sed -i '/^post-build-hook/d' /etc/nix/nix.conf

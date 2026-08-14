@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+# Push the closure of one or more store paths to the local Magic Nix
+# Cache proxy at http://127.0.0.1:37515, filtered to paths that
+# cache.nixos.org doesn't already have. Magic Nix Cache forwards those
+# uploads to the GitHub Actions cache.
+#
+# We do the filter here rather than relying on magic-nix-cache's own
+# upstream-cache flag: that flag is broken in v14 and re-uploads paths
+# Nix substituted straight from cache.nixos.org, which blows through the
+# GHA API rate limit on any real closure. Combined with a stripped
+# post-build-hook in the install-nix composite, this keeps cache-deps
+# the sole writer -- other jobs still read via the proxy's substituter.
+#
+# Usage:  scripts/nix-cache-upload <store-path>...
+# Example: scripts/nix-cache-upload ./result
+
+set -o errexit
+set -o errtrace
+set -o nounset
+set -o pipefail
+
+ROOT="$(realpath "$(dirname "$0")"/../)"
+. "$ROOT/scripts/log"
+
+if [ $# -lt 1 ]; then
+  error "at least one store path required"
+  exit 2
+fi
+
+export CACHE_URL="${MAGIC_NIX_CACHE_URL:-http://127.0.0.1:37515}"
+export UPSTREAM="${NIX_UPSTREAM_CACHE:-https://cache.nixos.org}"
+
+not_on_upstream() {
+  local p="$1"
+  local hash="${p##*/store/}"
+  hash="${hash%%-*}"
+  curl -sf -o /dev/null "$UPSTREAM/${hash}.narinfo" || echo "$p"
+}
+export -f not_on_upstream
+
+info "Computing closure of $*"
+all_paths="$(nix path-info --recursive --json "$@" | jq -r '.[].path')"
+n_all="$(printf '%s\n' "$all_paths" | grep -c . || true)"
+info "$n_all paths in closure"
+
+info "Filtering paths already on $UPSTREAM"
+local_paths="$(printf '%s\n' "$all_paths" | xargs -P 32 -I{} bash -c 'not_on_upstream "$@"' _ {})"
+n_local="$(printf '%s\n' "$local_paths" | grep -c . || true)"
+info "$n_local paths not on $UPSTREAM"
+
+if [ "$n_local" -eq 0 ]; then
+  info "Nothing to upload"
+  exit 0
+fi
+
+info "Copying to $CACHE_URL"
+printf '%s\n' "$local_paths" | xargs nix copy --to "$CACHE_URL"
+info "Done"
