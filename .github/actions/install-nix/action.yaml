@@ -63,9 +63,15 @@ runs:
       if: runner.os != 'macOS'
       shell: bash
       run: |
-        echo "--- ls -la /etc/nix ---"
-        sudo ls -la /etc/nix
-        echo "--- grep post-build-hook across /etc/nix ---"
-        sudo grep -rHn post-build-hook /etc/nix || echo "(no matches)"
-        echo "--- effective hook before strip ---"
+        echo "--- env vars naming nix or hook ---"
+        env | grep -iE 'nix|hook' || echo "(none)"
+        echo "--- NIX_CONFIG (if set, might carry the hook) ---"
+        echo "${NIX_CONFIG:-(unset)}"
+        echo "--- user-level nix.conf candidates ---"
+        for f in "$HOME/.config/nix/nix.conf" "${XDG_CONFIG_HOME:-$HOME/.config}/nix/nix.conf"; do
+          [ -f "$f" ] && { echo "$f:"; cat "$f"; } || echo "$f (missing)"
+        done
+        echo "--- grep post-build-hook across common config roots ---"
+        sudo grep -rHn post-build-hook /etc/nix "$HOME/.config/nix" 2>/dev/null || echo "(no matches)"
+        echo "--- effective hook ---"
         nix config show 2>/dev/null | grep -i post-build-hook || echo "(unset)"
