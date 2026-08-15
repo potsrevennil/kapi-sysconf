@@ -1,14 +1,6 @@
-# Warms the GHA cache with per-config activation/toplevel closures for the
-# Linux build targets, so the downstream build.yml legs are cache hits.
-#
-# Darwin targets are absent from this matrix on purpose: magic-nix-cache is
-# gated off on macOS in the install-nix composite (post-build-hook is
-# unreliable on the darwin daemon), so a darwin cache-deps leg would upload
-# nothing and just burn runner minutes.
-#
-# Only paths cache.nixos.org doesn't have get uploaded, thanks to the
-# priority=1 substituter pin in the install-nix composite -- upstream nixpkgs
-# is fetched, not re-uploaded.
+# Warms the GHA cache with per-config Linux closures so downstream
+# build legs cache-hit. Darwin is out of matrix -- magic-nix-cache is
+# off there, so a darwin cache-deps would upload nothing.
 name: Cache dependencies
 on:
   workflow_call:

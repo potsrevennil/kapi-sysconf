@@ -1,19 +1,11 @@
 #!/usr/bin/env bash
 
-# Push the closure of one or more store paths to the local Magic Nix
-# Cache proxy at http://127.0.0.1:37515, filtered to paths that
-# cache.nixos.org doesn't already have. Magic Nix Cache forwards those
-# uploads to the GitHub Actions cache.
+# Push the closure of <store-path>... to the local Magic Nix Cache
+# proxy, filtered to paths cache.nixos.org doesn't have. Bypasses
+# magic-nix-cache's v14 upstream-cache filter (which re-uploads
+# upstream paths and hits the GHA API rate limit).
 #
-# We do the filter here rather than relying on magic-nix-cache's own
-# upstream-cache flag: that flag is broken in v14 and re-uploads paths
-# Nix substituted straight from cache.nixos.org, which blows through the
-# GHA API rate limit on any real closure. Combined with a stripped
-# post-build-hook in the install-nix composite, this keeps cache-deps
-# the sole writer -- other jobs still read via the proxy's substituter.
-#
-# Usage:  scripts/nix-cache-upload <store-path>...
-# Example: scripts/nix-cache-upload ./result
+# Usage: scripts/nix-cache-upload <store-path>...
 
 set -o errexit
 set -o errtrace
@@ -32,19 +24,14 @@ CACHE_URL="${MAGIC_NIX_CACHE_URL:-http://127.0.0.1:37515}"
 export UPSTREAM="${NIX_UPSTREAM_CACHE:-https://cache.nixos.org}"
 
 info "Computing closure of $*"
-# nix-store -qR gives one store path per line -- older and stabler
-# than `nix path-info --json`, whose output format has churned twice
-# and whose --json-format flag isn't recognised on every Nix version.
 all_paths="$(nix-store -qR "$@")"
 n_all="$(printf '%s\n' "$all_paths" | grep -c . || true)"
 info "$n_all paths in closure"
 
-# Inline the curl check rather than defining a function and relying on
-# export -f: xargs -I{} bash -c spawns bash with -c, which doesn't
-# always pick up exported functions cleanly. UPSTREAM is a plain env
-# var and does propagate.
 info "Filtering paths already on $UPSTREAM"
-# shellcheck disable=SC2016  # expansions in the here-doc are deferred to child bash
+# Inline the check: xargs bash -c doesn't reliably inherit exported
+# functions, and UPSTREAM as a plain env var propagates fine.
+# shellcheck disable=SC2016  # single-quoted expansions are for the child
 local_paths="$(printf '%s\n' "$all_paths" | xargs -P 32 -I{} bash -c '
   p="$1"
   hash="${p##*/store/}"
