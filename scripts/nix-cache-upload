@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# Push the closure of <store-path>... to the local Magic Nix Cache
+# proxy, filtered to paths cache.nixos.org doesn't have. Bypasses
+# magic-nix-cache's v14 upstream-cache filter (which re-uploads
+# upstream paths and hits the GHA API rate limit).
+#
+# Usage: scripts/nix-cache-upload <store-path>...
+
+set -o errexit
+set -o errtrace
+set -o nounset
+set -o pipefail
+
+ROOT="$(realpath "$(dirname "$0")"/../)"
+. "$ROOT/scripts/log"
+
+if [ $# -lt 1 ]; then
+  error "at least one store path required"
+  exit 2
+fi
+
+CACHE_URL="${MAGIC_NIX_CACHE_URL:-http://127.0.0.1:37515}"
+export UPSTREAM="${NIX_UPSTREAM_CACHE:-https://cache.nixos.org}"
+
+info "Computing closure of $*"
+all_paths="$(nix-store -qR "$@")"
+n_all="$(printf '%s\n' "$all_paths" | grep -c . || true)"
+info "$n_all paths in closure"
+
+info "Filtering paths already on $UPSTREAM"
+# Inline the check: xargs bash -c doesn't reliably inherit exported
+# functions, and UPSTREAM as a plain env var propagates fine.
+# shellcheck disable=SC2016  # single-quoted expansions are for the child
+local_paths="$(printf '%s\n' "$all_paths" | xargs -P 32 -I{} bash -c '
+  p="$1"
+  hash="${p##*/store/}"
+  hash="${hash%%-*}"
+  curl -sf -o /dev/null "$UPSTREAM/${hash}.narinfo" || echo "$p"
+' _ {})"
+n_local="$(printf '%s\n' "$local_paths" | grep -c . || true)"
+info "$n_local of $n_all paths not on $UPSTREAM"
+
+if [ "$n_local" -eq 0 ]; then
+  info "Nothing to upload"
+  exit 0
+fi
+
+info "Uploading $n_local paths to $CACHE_URL"
+while IFS= read -r p; do
+  [ -z "$p" ] && continue
+  nix copy --to "$CACHE_URL" "$p"
+  info "Uploaded $p"
+done <<< "$local_paths"
+info "Done"

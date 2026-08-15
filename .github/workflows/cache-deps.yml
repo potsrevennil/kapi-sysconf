@@ -1,0 +1,31 @@
+# Warms the GHA cache with per-config Linux closures so downstream
+# build legs cache-hit. Darwin is out of matrix -- magic-nix-cache is
+# off there, so a darwin cache-deps would upload nothing.
+name: Cache dependencies
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  cache-deps:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: home-manager (thing-hanlim, linux)
+            target: homeConfigurations.thing-hanlim-linux.activationPackage
+          - name: nixos (odroid)
+            target: nixosConfigurations.nixos.config.system.build.toplevel
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/build-flake-target
+        with:
+          target: ${{ matrix.target }}
+      - name: Push non-upstream paths to GHA cache
+        run: scripts/nix-cache-upload ./result

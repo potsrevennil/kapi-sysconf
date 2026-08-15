@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 
-RED="$(tput setaf 1)"
-GREEN="$(tput setaf 2)"
-YELLOW3="$(tput setaf 148)"
-BLUE="$(tput setaf 4)"
-GREY54="$(tput setaf 249)"
-NORMAL="$(tput sgr0)"
+# tput needs $TERM; CI runners run scripts headless so it isn't set.
+# Fall back to blank codes rather than erroring on `set -e`.
+_tput() { tput "$@" 2>/dev/null || true; }
+
+RED="$(_tput setaf 1)"
+GREEN="$(_tput setaf 2)"
+YELLOW3="$(_tput setaf 148)"
+BLUE="$(_tput setaf 4)"
+GREY54="$(_tput setaf 249)"
+NORMAL="$(_tput sgr0)"
 
 export RED
 export GREEN

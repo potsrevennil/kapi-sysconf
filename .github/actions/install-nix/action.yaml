@@ -1,18 +1,39 @@
 name: 'Install Nix'
-description: 'Install Nix'
+description: 'Install Nix + read-only Magic Nix Cache substituter'
 runs:
   using: 'composite'
   steps:
-    # Multi-user (daemon) install: darwin-rebuild assumes NIX_REMOTE=daemon
-    # and a system-wide profile, which single-user installs can't provide
-    # for `sudo darwin-rebuild switch`.
+    # Stock Nix (not the Determinate fork) so magic-nix-cache uses the
+    # classical post-build-hook, not the nixd firehose that fires for
+    # substituted paths. Multi-user install keeps sudo darwin-rebuild.
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@v22
+      with:
+        determinate: false
 
-    # Belt-and-suspenders: the installer already does this, but we don't
-    # want to depend on that staying true.
-    - name: Enable flakes system-wide (for sudo'd nix invocations)
+    # Belt-and-suspenders; installer sets this already.
+    - name: Enable flakes
       shell: bash
       run: |
         sudo mkdir -p /etc/nix
         echo "experimental-features = nix-command flakes" | sudo tee -a /etc/nix/nix.conf
+
+    # Lower priority = higher preference; pin cache.nixos.org above
+    # magic-nix-cache's proxy so upstream paths never route through GHA.
+    - name: Prefer cache.nixos.org
+      shell: bash
+      run: |
+        sudo mkdir -p /etc/nix
+        echo "extra-substituters = https://cache.nixos.org?priority=1" | sudo tee -a /etc/nix/nix.conf
+
+    # macOS: magic-nix-cache's post-build-hook is unreliable on the
+    # darwin daemon, so darwin runs off cache.nixos.org alone.
+    - name: Magic Nix Cache
+      if: runner.os != 'macOS'
+      uses: DeterminateSystems/magic-nix-cache-action@v14
+      with:
+        use-flakehub: false
+
+    - name: Sanitise nix.conf
+      shell: bash
+      run: scripts/sanitise-nix-conf
