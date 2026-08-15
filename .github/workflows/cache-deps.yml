@@ -18,6 +18,15 @@ jobs:
             target: homeConfigurations.thing-hanlim-linux.activationPackage
           - name: nixos (odroid)
             target: nixosConfigurations.nixos.config.system.build.toplevel
+          # odroid-image adds a patched u-boot cross-build and disko's
+          # image-assembly derivations on top of the shared system closure --
+          # heavy the first time, then substituted from GHA cache like the
+          # other legs. Building the *diskoImagesScript* forces the full
+          # closure (toplevel + disko-builder + kernel-modules-shrunk) without
+          # running the script itself, which would need /dev/kvm for aarch64
+          # guests (not exposed on GitHub's arm64 runners).
+          - name: odroid-image (aarch64-linux)
+            target: nixosConfigurations.odroid-image.config.system.build.diskoImagesScript
     name: ${{ matrix.name }}
     runs-on: ubuntu-24.04-arm
     steps:
