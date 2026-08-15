@@ -21,9 +21,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # slug: comma/space-free -- GHA cache keys reject commas, and it's
+          # easier to keep name (human) and slug (key) as separate fields
+          # than to escape the display name.
           - name: home-manager (thing-hanlim, linux)
+            slug: home-manager-thing-hanlim-linux
             target: homeConfigurations.thing-hanlim-linux.activationPackage
           - name: nixos (odroid)
+            slug: nixos-odroid
             target: nixosConfigurations.nixos.config.system.build.toplevel
           # odroid-image adds a patched u-boot cross-build and disko's
           # image-assembly derivations on top of the shared system closure --
@@ -33,6 +38,7 @@ jobs:
           # running the script itself, which would need /dev/kvm for aarch64
           # guests (not exposed on GitHub's arm64 runners).
           - name: odroid-image (aarch64-linux)
+            slug: odroid-image-aarch64-linux
             target: nixosConfigurations.odroid-image.config.system.build.diskoImagesScript
     name: ${{ matrix.name }}
     runs-on: ubuntu-24.04-arm
@@ -45,7 +51,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: /tmp/cache-deps-sentinel
-          key: cache-deps-${{ matrix.name }}-${{ runner.arch }}-${{ hashFiles('flake.lock', '**/*.nix') }}
+          key: cache-deps-${{ matrix.slug }}-${{ runner.arch }}-${{ hashFiles('flake.lock', '**/*.nix') }}
           lookup-only: true
       - uses: ./.github/actions/build-flake-target
         if: steps.sentinel.outputs.cache-hit != 'true' || github.event_name == 'workflow_dispatch'
@@ -61,4 +67,4 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: /tmp/cache-deps-sentinel
-          key: cache-deps-${{ matrix.name }}-${{ runner.arch }}-${{ hashFiles('flake.lock', '**/*.nix') }}
+          key: cache-deps-${{ matrix.slug }}-${{ runner.arch }}-${{ hashFiles('flake.lock', '**/*.nix') }}
