@@ -1,6 +1,13 @@
 # Warms the GHA cache with per-config Linux closures so downstream
 # build legs cache-hit. Darwin is out of matrix -- magic-nix-cache is
 # off there, so a darwin cache-deps would upload nothing.
+#
+# Sentinel-gated per leg: hashFiles('flake.lock', '**/*.nix') keys a
+# tiny marker file; when it hits, we skip install-nix + build + upload
+# entirely (~1-2min saved per no-op run). Over-invalidates on purpose
+# -- any .nix change anywhere rebuilds every leg -- because tracking
+# each config's true dependency set from a Nix import graph is fragile.
+# workflow_dispatch always forces a rebuild for manual cache refreshes.
 name: Cache dependencies
 on:
   workflow_call:
@@ -14,18 +21,50 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # slug: comma/space-free -- GHA cache keys reject commas, and it's
+          # easier to keep name (human) and slug (key) as separate fields
+          # than to escape the display name.
           - name: home-manager (thing-hanlim, linux)
+            slug: home-manager-thing-hanlim-linux
             target: homeConfigurations.thing-hanlim-linux.activationPackage
           - name: nixos (odroid)
+            slug: nixos-odroid
             target: nixosConfigurations.nixos.config.system.build.toplevel
+          # odroid-image adds a patched u-boot cross-build and disko's
+          # image-assembly derivations on top of the shared system closure --
+          # heavy the first time, then substituted from GHA cache like the
+          # other legs. Building the *diskoImagesScript* forces the full
+          # closure (toplevel + disko-builder + kernel-modules-shrunk) without
+          # running the script itself, which would need /dev/kvm for aarch64
+          # guests (not exposed on GitHub's arm64 runners).
+          - name: odroid-image (aarch64-linux)
+            slug: odroid-image-aarch64-linux
+            target: nixosConfigurations.odroid-image.config.system.build.diskoImagesScript
     name: ${{ matrix.name }}
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
+      - name: Check if this state is already cached
+        id: sentinel
+        uses: actions/cache/restore@v5
+        with:
+          path: /tmp/cache-deps-sentinel
+          key: cache-deps-${{ matrix.slug }}-${{ runner.arch }}-${{ hashFiles('flake.lock', '**/*.nix') }}
+          lookup-only: true
       - uses: ./.github/actions/build-flake-target
+        if: steps.sentinel.outputs.cache-hit != 'true' || github.event_name == 'workflow_dispatch'
         with:
           target: ${{ matrix.target }}
       - name: Push non-upstream paths to GHA cache
-        run: scripts/nix-cache-upload ./result
+        if: steps.sentinel.outputs.cache-hit != 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          scripts/nix-cache-upload ./result
+          touch /tmp/cache-deps-sentinel
+      - name: Save cache sentinel
+        if: steps.sentinel.outputs.cache-hit != 'true' || github.event_name == 'workflow_dispatch'
+        uses: actions/cache/save@v5
+        with:
+          path: /tmp/cache-deps-sentinel
+          key: cache-deps-${{ matrix.slug }}-${{ runner.arch }}-${{ hashFiles('flake.lock', '**/*.nix') }}
