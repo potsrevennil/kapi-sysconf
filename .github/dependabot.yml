@@ -1,0 +1,16 @@
+# Weekly flake.lock bumps. Native nix ecosystem shipped 2026-04-07:
+# https://github.blog/changelog/2026-04-07-dependabot-version-updates-now-support-the-nix-ecosystem/
+# One PR per input by default — a bad transitive bump lands alone instead
+# of riding in with the batch (see 62ce615 for prior fallout of the batched
+# approach).
+version: 2
+updates:
+  - package-ecosystem: "nix"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    commit-message:
+      prefix: "chore(deps)"
