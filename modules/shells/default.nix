@@ -47,9 +47,16 @@ let cfg = config.modules.shells; in
     };
     xdg = {
       enable = true;
-      configFile = {
-        "zsh".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/Projects/kapi-sysconf/modules/shells/zsh";
-      };
+      configFile =
+        let
+          zshSrc = "${config.home.homeDirectory}/Projects/kapi-sysconf/modules/shells/zsh";
+          mkLink = name: {
+            "zsh/${name}".source = config.lib.file.mkOutOfStoreSymlink "${zshSrc}/${name}";
+          };
+        in
+        # Per-file (not whole-dir) symlinks so home-manager's zsh module can
+        # also place its generated .zshrc / .zshenv under ~/.config/zsh.
+        lib.mkMerge (map mkLink [ "zshrc" "zsh_plugins.txt" "zsh_plugins.zsh" ]);
     };
   };
 }
