@@ -55,7 +55,7 @@ let cfg = config.modules.shells; in
           };
         in
         # Per-file (not whole-dir) symlinks so home-manager's zsh module can
-        # also place its generated .zshrc / .zshenv under ~/.config/zsh.
+          # also place its generated .zshrc / .zshenv under ~/.config/zsh.
         lib.mkMerge (map mkLink [ "zshrc" "zsh_plugins.txt" "zsh_plugins.zsh" ]);
     };
   };
