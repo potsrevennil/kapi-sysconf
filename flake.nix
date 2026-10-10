@@ -32,14 +32,9 @@
     };
 
     # odroid-image (hosts/odroid/image) bring-up config: builds a flashable
-    # NixOS+u-boot image for the odroid host from scratch. uboot-src is
-    # Kwiboo's patched rk3xxx u-boot fork; nixos-hardware provides the
-    # rockchip platform module. Both unused until that config lands.
-    uboot-src = {
-      flake = false;
-      url = "github:Kwiboo/u-boot-rockchip/rk3xxx-2025.04";
-    };
-
+    # NixOS+u-boot image for the odroid host from scratch. nixos-hardware
+    # provides the rockchip platform module; u-boot, ATF, and rkbin come
+    # from nixpkgs directly (mainline 26.05 has odroid-m2-rk3588s_defconfig).
     nixos-hardware.url = "github:NixOS/nixos-hardware";
   };
   outputs = inputs@{ flake-parts, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
