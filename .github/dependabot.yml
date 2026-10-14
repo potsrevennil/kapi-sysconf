@@ -1,8 +1,11 @@
 # Weekly flake.lock bumps. Native nix ecosystem shipped 2026-04-07:
 # https://github.blog/changelog/2026-04-07-dependabot-version-updates-now-support-the-nix-ecosystem/
-# One PR per input by default — a bad transitive bump lands alone instead
-# of riding in with the batch (see 62ce615 for prior fallout of the batched
-# approach).
+# One PR per input — a bad transitive bump lands alone instead of riding
+# in with the batch (see 62ce615 for prior fallout of the batched
+# approach). Each input gets its own single-member group because
+# ungrouped PRs are closed and reopened ("Superseded by #N") on every new
+# commit, while a group PR whose members are unchanged is refreshed in
+# place.
 version: 2
 updates:
   - package-ecosystem: "nix"
@@ -14,3 +17,18 @@ updates:
       timezone: "Etc/UTC"
     commit-message:
       prefix: "chore(deps)"
+    groups:
+      darwin:
+        patterns: ["darwin"]
+      disko:
+        patterns: ["disko"]
+      flake-parts:
+        patterns: ["flake-parts"]
+      home-manager:
+        patterns: ["home-manager"]
+      kapi-vim:
+        patterns: ["kapi-vim"]
+      nixos-hardware:
+        patterns: ["nixos-hardware"]
+      nixpkgs:
+        patterns: ["nixpkgs"]
