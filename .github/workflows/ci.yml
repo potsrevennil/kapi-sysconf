@@ -1,9 +1,12 @@
-# Each job is a reusable workflow (uses:) rather than an inline job. The
-# indirection is deliberate: GHA-cache scoping treats reusable-workflow
-# tokens as reads unless the caller explicitly grants write, which lets
-# cache-deps be the sole writer and every other job a reader with no
-# per-job configuration. See .github/actions/install-nix for the
-# substituter-priority + magic-nix-cache setup that backs this.
+# Each job is a reusable workflow (uses:) rather than an inline job.
+# Every job reads the GHA cache through magic-nix-cache; only the build
+# legs with `cache: true` write to it (scripts/cache-deps), since each
+# custom derivation is used by exactly one leg. See
+# .github/actions/install-nix for the substituter setup.
+#
+# Nothing waits on anything: flake-check only evaluates, and a build leg
+# builds or substitutes its own custom derivation, so a `needs` would
+# only add wall-clock.
 name: CI
 on:
   push:
@@ -19,9 +22,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  cache-deps:
-    uses: ./.github/workflows/cache-deps.yml
-
   lint:
     uses: ./.github/workflows/lint.yml
 
@@ -29,5 +29,4 @@ jobs:
     uses: ./.github/workflows/flake-check.yml
 
   build:
-    needs: [cache-deps, flake-check]
     uses: ./.github/workflows/build.yml

@@ -3,7 +3,7 @@
 # Strip broken magic-nix-cache settings from every nix.conf:
 #   post-build-hook       -- v14's auto-upload uses a broken upstream
 #                            filter that re-uploads cache.nixos.org
-#                            paths. cache-deps.yml uploads by hand.
+#                            paths. Uploads go through scripts/cache-deps.
 #   build-provenance-tags -- unknown to upstream Nix (installed with
 #                            determinate:false), warns every invocation.
 

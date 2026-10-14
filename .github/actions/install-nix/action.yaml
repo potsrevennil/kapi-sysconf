@@ -26,8 +26,10 @@ runs:
         sudo mkdir -p /etc/nix
         echo "extra-substituters = https://cache.nixos.org?priority=1" | sudo tee -a /etc/nix/nix.conf
 
-    # macOS: magic-nix-cache's post-build-hook is unreliable on the
-    # darwin daemon, so darwin runs off cache.nixos.org alone.
+    # Not on macOS: v14's ARM64-macOS binary dies at launch on macos-14
+    # (dyld: libc++ symbol __ZNSt13exception_ptr31__from_native_exception_pointerEPv
+    # missing) and the action then waits for its startup notification
+    # until the job is killed. Darwin runs off cache.nixos.org alone.
     - name: Magic Nix Cache
       if: runner.os != 'macOS'
       uses: DeterminateSystems/magic-nix-cache-action@v14

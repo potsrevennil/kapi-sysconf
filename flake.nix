@@ -85,13 +85,14 @@
 
       # What CI builds from source, by name, for scripts/cache-deps: each
       # member's output path is its cache key. Everything else is either on
-      # cache.nixos.org or config glue that builds in seconds. ubootOdroidM2
-      # comes from odroid-image's own pkgs -- nixosSystem doesn't share this
-      # pkgs -- so the cached path is the one the image uses.
+      # cache.nixos.org or config glue that builds in seconds. (Darwin's
+      # overlaid statix is uncached too, but magic-nix-cache can't run on
+      # the macOS runners -- see install-nix.) ubootOdroidM2 comes from
+      # odroid-image's own pkgs -- nixosSystem doesn't share this pkgs -- so
+      # the cached path is the one the image uses.
       packages.ci-cache =
         let
-          members = { inherit (pkgs) statix; }
-            // lib.optionalAttrs (system == "aarch64-linux") {
+          members = lib.optionalAttrs (system == "aarch64-linux") {
             inherit (inputs.self.nixosConfigurations.odroid-image.pkgs) ubootOdroidM2;
           };
         in
