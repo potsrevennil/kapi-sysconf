@@ -17,6 +17,11 @@ updates:
       timezone: "Etc/UTC"
     commit-message:
       prefix: "chore(deps)"
+    # kapi-vim is a git+file: input pointing at the submodule; Dependabot
+    # can't fetch it, and the error fails the whole update job. The
+    # submodule is bumped by hand.
+    ignore:
+      - dependency-name: "kapi-vim"
     groups:
       darwin:
         patterns: ["darwin"]
@@ -26,8 +31,6 @@ updates:
         patterns: ["flake-parts"]
       home-manager:
         patterns: ["home-manager"]
-      kapi-vim:
-        patterns: ["kapi-vim"]
       nixos-hardware:
         patterns: ["nixos-hardware"]
       nixpkgs:
