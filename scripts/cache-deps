@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# Build the members of PACKAGE (default ci-cache) whose output STORE
+# doesn't have, and copy them to STORE. STORE is the binary cache CI
+# substitutes from: magic-nix-cache's http://$MAGIC_NIX_CACHE_ADDRESS in
+# CI, or any nix store URL (file://...) to try it locally.
+#
+# A member's output path changes exactly when its derivation does, so
+# unchanged members are neither built nor fetched. `nix copy` skips
+# every path STORE already has; behind magic-nix-cache that includes
+# cache.nixos.org's, which it answers for.
+#
+# Usage: scripts/cache-deps STORE [PACKAGE]
+
+set -o errexit
+set -o errtrace
+set -o nounset
+set -o pipefail
+
+ROOT="$(realpath "$(dirname "$0")"/../)"
+. "$ROOT/scripts/log"
+
+if [ $# -lt 1 ]; then
+  error "usage: $0 STORE [PACKAGE]"
+  exit 2
+fi
+
+store="$1"
+package="${2:-ci-cache}"
+
+missing=()
+# shellcheck disable=SC2016  # ${n} ${d} are Nix interpolation, not shell
+while read -r name out; do
+  # Any failure, not only "not valid", counts as missing: building is safe.
+  nix path-info --store "$store" "$out" >/dev/null 2>&1 || missing+=("$name")
+done < <(nix eval --raw ".#$package.members" --apply \
+  'ms: builtins.concatStringsSep "\n" (builtins.attrValues (builtins.mapAttrs (n: d: "${n} ${d}") ms)) + "\n"')
+
+if [ ${#missing[@]} -eq 0 ]; then
+  info "all cached"
+  exit 0
+fi
+
+info "building: ${missing[*]}"
+installables=("${missing[@]/#/.#$package.members.}")
+nix build --no-link "${installables[@]}"
+
+# Best-effort: GHA throttles magic-nix-cache (HTTP 418) when several runs
+# hit the cache API at once. A failed copy only leaves the cache cold --
+# the next run sees the member missing and retries -- so it mustn't fail
+# CI. zstd: nix's default xz is slow on large outputs.
+if ! nix copy --to "$store?compression=zstd" "${installables[@]}"; then
+  warn "upload to $store failed (likely throttled); next run retries"
+  echo "::warning::cache-deps upload failed (likely throttled); cache not warmed"
+fi
