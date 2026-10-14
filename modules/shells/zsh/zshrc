@@ -54,3 +54,39 @@ _fzf_comprun() {
 # alias
 alias ls="ls --color"
 alias fman="compgen -c | fzf | xargs man"
+
+# Worktree-aware git (zsh only: git has no hook for new `worktree` subcommands or for
+# changing `checkout`/`switch`, and a git alias cannot cd the shell).
+#   git worktree path <branch>   print the worktree that has <branch> checked out
+#   git checkout|switch <branch> cd into that worktree instead of failing with
+#                                "already used by worktree"; also covers omz gco/gsw
+# Sets REPLY to the worktree of branch $1; one `git worktree list`, parsed in-shell.
+_git_worktree_of() {
+  local line wt
+  for line in ${(f)"$(command git worktree list --porcelain 2>/dev/null)"}; do
+    case $line in
+      'worktree '*) wt=${line#worktree } ;;
+      "branch refs/heads/$1") REPLY=$wt; return 0 ;;
+    esac
+  done
+  return 1
+}
+
+git() {
+  local REPLY
+  case "$1:$2" in
+    worktree:path)
+      (( $# == 3 )) || { print -u2 'usage: git worktree path <branch>'; return 129 }
+      _git_worktree_of $3 && print -r -- $REPLY
+      return ;;
+    checkout:[^-]*|switch:[^-]*)
+      # Only a bare `git checkout <branch>`; flags, paths and `-` go straight to git.
+      if (( $# == 2 )) && _git_worktree_of $2 && [[ -d $REPLY ]] &&
+         [[ $(command git symbolic-ref -q --short HEAD) != $2 ]]; then
+        print -u2 "Switched to worktree '$REPLY'"
+        cd $REPLY
+        return
+      fi ;;
+  esac
+  command git "$@"
+}
