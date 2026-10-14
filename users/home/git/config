@@ -1,3 +1,7 @@
+[alias]
+	# Print the path of the worktree that has branch $1 checked out (zshrc's `gco` cds there).
+	wt = "!f() { git worktree list --porcelain | awk -v b=refs/heads/$1 '/^worktree /{p=substr($0,10)} $2==b{print p; ok=1; exit} END{exit !ok}'; }; f"
+
 [commit]
 	template = "/Users/thing-hanlim/.config/git/gitmessage_global"
 

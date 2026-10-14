@@ -54,3 +54,8 @@ _fzf_comprun() {
 # alias
 alias ls="ls --color"
 alias fman="compgen -c | fzf | xargs man"
+
+# gco <branch>: cd into the worktree that already has <branch> checked out, else plain `git checkout`.
+unalias gco 2>/dev/null
+gco() { local d; if (( $# == 1 )) && d=$(git wt "$1" 2>/dev/null); then cd $d; else git checkout "$@"; fi }
+compdef _git gco=git-checkout
