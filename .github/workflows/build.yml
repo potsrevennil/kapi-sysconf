@@ -37,8 +37,6 @@ jobs:
           - name: home-manager (thing-hanlim, darwin)
             runs-on: macos-14
             target: homeConfigurations.thing-hanlim.activationPackage
-            # Uploads darwin's overlaid statix (ci-cache).
-            cache: true
             switch: true
             switchContinueOnError: false
             switchCmd: HOME_MANAGER_BACKUP_EXT=backup ./result/activate
