@@ -37,6 +37,8 @@ jobs:
           - name: home-manager (thing-hanlim, darwin)
             runs-on: macos-14
             target: homeConfigurations.thing-hanlim.activationPackage
+            # Uploads darwin's overlaid statix (ci-cache).
+            cache: true
             switch: true
             switchContinueOnError: false
             switchCmd: HOME_MANAGER_BACKUP_EXT=backup ./result/activate
@@ -56,11 +58,17 @@ jobs:
           - name: odroid-image (aarch64-linux)
             runs-on: ubuntu-24.04-arm
             target: nixosConfigurations.odroid-image.config.system.build.diskoImagesScript
+            # Uploads u-boot (ci-cache).
+            cache: true
             switch: false
             switchContinueOnError: false
             switchCmd: ""
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runs-on }}
+    # Warm runs take 1-4 min. When GHA throttles magic-nix-cache
+    # mid-substitution, Nix can hang silently until the 6h job limit
+    # (seen on odroid-image, PR #36); fail fast instead.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
         with:
@@ -68,6 +76,12 @@ jobs:
       - uses: ./.github/actions/build-flake-target
         with:
           target: ${{ matrix.target }}
+      # The leg that uses a custom derivation uploads it, if the cache
+      # lacks it: already built or substituted above, so this is lookups
+      # plus at most one `nix copy`.
+      - name: Cache custom derivations
+        if: matrix.cache
+        run: scripts/cache-deps "http://$MAGIC_NIX_CACHE_ADDRESS"
       - name: switch
         if: matrix.switch
         continue-on-error: ${{ matrix.switchContinueOnError == true }}
