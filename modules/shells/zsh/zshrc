@@ -57,13 +57,17 @@ alias fman="compgen -c | fzf | xargs man"
 
 # Worktree-aware git (zsh only: git has no hook for new `worktree` subcommands or for
 # changing `checkout`/`switch`, and a git alias cannot cd the shell).
-#   git worktree path <branch>   print the worktree that has <branch> checked out
-#   git checkout|switch <branch> cd into that worktree instead of failing with
-#                                "already used by worktree"; also covers omz gco/gsw
-#   git checkout|switch <pr>     with gh: #123, a PR URL, or a bare number that is not a
-#                                rev or path; lands on the PR's exact head commit, in the
-#                                worktree or local branch whose tip it is, else on a new
-#                                branch from `gh pr checkout`
+#   git worktree path <branch>      print the worktree that has <branch> checked out
+#   git checkout|switch <branch>    switch the main checkout to <branch> and cd there, from
+#                                   any worktree; also covers omz gco/gsw
+#   git checkout|switch -H <branch> the same, in the current worktree instead
+#   git checkout|switch [-H] <pr>   with gh: #123, a PR URL, or a bare number that is not a
+#                                   rev or path; lands on the PR's exact head commit, on the
+#                                   local branch whose tip it is, else on a new branch from
+#                                   `gh pr checkout`
+# A linked worktree that already holds the branch is detached (same commit) to free it,
+# but only if it has no uncommitted changes. Anything not naming a local or remote branch
+# (commits, tags, paths, `-`, other flags) goes straight to git.
 # Sets REPLY to the worktree of branch $1; one `git worktree list`, parsed in-shell.
 _git_worktree_of() {
   local line wt
@@ -74,6 +78,18 @@ _git_worktree_of() {
     esac
   done
   return 1
+}
+
+# Sets REPLY to the main checkout, or the current worktree if there is none (bare repo,
+# submodule).
+_git_main_worktree() {
+  local common
+  common=$(command git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return
+  if [[ $common == */.git ]]; then
+    REPLY=${common:h}
+  else
+    REPLY=$(command git rev-parse --show-toplevel) || return
+  fi
 }
 
 # Sets REPLY to the gh PR selector named by $1, if gh is installed.
@@ -88,57 +104,94 @@ _git_pr_of() {
   esac
 }
 
-# Land on PR $1's exact head commit: HEAD if already there, else the local branch whose
-# tip it is (the PR's branch name first), cd-ing to its worktree if it has
-# one; with no such branch, `gh pr checkout` into a new branch that does not clobber one.
+# Whether $1 is a local branch, or a remote one `git switch` would create it from.
+_git_is_branch() {
+  command git show-ref -q --verify refs/heads/$1 2>/dev/null ||
+    [[ -n $(command git for-each-ref --count=1 "refs/remotes/*/$1" 2>/dev/null) ]]
+}
+
+# cd to worktree $1 unless already in it.
+_git_enter() {
+  [[ ${1:A} == ${$(command git rev-parse --show-toplevel 2>/dev/null):A} ]] && return
+  print -u2 "Switched to worktree '$1'"
+  cd $1
+}
+
+# Run `git $2 $3` in worktree $1 and cd there. If another worktree holds branch $3, detach
+# it first (refusing when it is dirty), and reattach it if the switch fails.
+_git_switch_in() {
+  local dir=$1 cmd=$2 branch=$3 holder
+  _git_worktree_of $branch && holder=$REPLY
+  if [[ -n $holder && ${holder:A} != ${dir:A} ]]; then
+    if [[ -n $(command git -C $holder status --porcelain 2>/dev/null) ]]; then
+      print -u2 "'$branch' is checked out in '$holder', which has uncommitted changes; leaving it"
+      return 1
+    fi
+    command git -C $holder switch -q --detach || return
+    print -u2 "Detached '$holder' to free '$branch'"
+    if ! command git -C $dir $cmd $branch; then
+      command git -C $holder switch -q $branch && print -u2 "Reattached '$holder' to '$branch'"
+      return 1
+    fi
+  elif [[ -z $holder ]]; then
+    command git -C $dir $cmd $branch || return
+  fi
+  _git_enter $dir
+}
+
+# Land worktree $1 on PR $3's exact head commit, via `git $2`: stay if its HEAD is already
+# there, else switch to the local branch whose tip it is (the PR's branch name first); with
+# no such branch, `gh pr checkout` into a new branch that does not clobber one.
 _git_pr_checkout() {
+  local dir=$1 cmd=$2
   local -a pr at
   local line name
-  pr=(${(f)"$(gh pr view $1 --json number,headRefOid,headRefName -q '.number, .headRefOid, .headRefName')"})
+  pr=(${(f)"$(gh pr view $3 --json number,headRefOid,headRefName -q '.number, .headRefOid, .headRefName')"})
   (( $#pr == 3 )) || return 1
   local num=$pr[1] oid=$pr[2] head=$pr[3]
-  if [[ $(command git rev-parse -q --verify HEAD) == $oid ]]; then
+  if [[ $(command git -C $dir rev-parse -q --verify HEAD) == $oid ]]; then
     print -u2 "Already on PR #$num ($oid)"
+    _git_enter $dir
     return
   fi
   for line in ${(f)"$(command git for-each-ref --format='%(objectname) %(refname:short)' refs/heads)"}; do
     [[ ${line%% *} == $oid ]] && at+=(${line#* })
   done
   if (( $#at )); then
-    name=${at[(r)$head]:-$at[1]}
-    _git_jump_to_worktree $name && return
-    command git switch $name
+    _git_switch_in $dir $cmd ${at[(r)$head]:-$at[1]}
     return
   fi
   for name in $head pr-$num pr-$num-${oid[1,7]}; do
     command git show-ref -q --verify refs/heads/$name || break
   done
-  gh pr checkout $1 --branch $name
-}
-
-# cd into the worktree holding branch $1, unless it is already the current one.
-_git_jump_to_worktree() {
-  _git_worktree_of $1 && [[ -d $REPLY ]] &&
-    [[ $(command git symbolic-ref -q --short HEAD) != $1 ]] || return 1
-  print -u2 "Switched to worktree '$REPLY'"
-  cd $REPLY
+  ( builtin cd -q $dir && gh pr checkout $3 --branch $name ) && _git_enter $dir
 }
 
 git() {
-  local REPLY
+  local REPLY dir
   case "$1:$2" in
     worktree:path)
       (( $# == 3 )) || { print -u2 'usage: git worktree path <branch>'; return 129 }
       _git_worktree_of $3 && print -r -- $REPLY
       return ;;
+    checkout:-H|switch:-H)
+      (( $# == 3 )) && dir=$(command git rev-parse --show-toplevel 2>/dev/null) ||
+        { command git $1 $@[3,-1]; return } ;&
     checkout:[^-]*|switch:[^-]*)
-      # Only a bare `git checkout <branch|pr>`; flags, paths and `-` go straight to git.
-      (( $# == 2 )) || { command git "$@"; return }
-      if _git_pr_of $2; then
-        _git_pr_checkout $REPLY
+      # Only a bare `git checkout [-H] <branch|pr>`; anything else goes straight to git.
+      if [[ -z $dir ]]; then
+        (( $# == 2 )) && _git_main_worktree || { command git "$@"; return }
+        dir=$REPLY
+      fi
+      if _git_pr_of $@[-1]; then
+        _git_pr_checkout $dir $1 $REPLY
         return
       fi
-      _git_jump_to_worktree $2 && return ;;
+      if _git_is_branch $@[-1]; then
+        _git_switch_in $dir $1 $@[-1]
+        return
+      fi ;;
   esac
+  [[ $1 == (checkout|switch) && $2 == -H ]] && set -- $1 $@[3,-1]
   command git "$@"
 }
