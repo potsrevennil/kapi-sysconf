@@ -60,6 +60,10 @@ alias fman="compgen -c | fzf | xargs man"
 #   git worktree path <branch>   print the worktree that has <branch> checked out
 #   git checkout|switch <branch> cd into that worktree instead of failing with
 #                                "already used by worktree"; also covers omz gco/gsw
+#   git checkout|switch <pr>     with gh: #123, a PR URL, or a bare number that is not a
+#                                rev or path; lands on the PR's exact head commit, in the
+#                                worktree or local branch whose tip it is, else on a new
+#                                branch from `gh pr checkout`
 # Sets REPLY to the worktree of branch $1; one `git worktree list`, parsed in-shell.
 _git_worktree_of() {
   local line wt
@@ -72,6 +76,54 @@ _git_worktree_of() {
   return 1
 }
 
+# Sets REPLY to the gh PR selector named by $1, if gh is installed.
+_git_pr_of() {
+  (( $+commands[gh] )) || return 1
+  case $1 in
+    '#'<->) REPLY=${1#\#} ;;
+    https://*/pull/<->|https://*/pull/<->/*) REPLY=$1 ;;
+    <->) [[ ! -e $1 ]] && ! command git rev-parse -q --verify "$1^{commit}" >/dev/null || return 1
+         REPLY=$1 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Land on PR $1's exact head commit: HEAD if already there, else the local branch whose
+# tip it is (the PR's branch name first), cd-ing to its worktree if it has
+# one; with no such branch, `gh pr checkout` into a new branch that does not clobber one.
+_git_pr_checkout() {
+  local -a pr at
+  local line name
+  pr=(${(f)"$(gh pr view $1 --json number,headRefOid,headRefName -q '.number, .headRefOid, .headRefName')"})
+  (( $#pr == 3 )) || return 1
+  local num=$pr[1] oid=$pr[2] head=$pr[3]
+  if [[ $(command git rev-parse -q --verify HEAD) == $oid ]]; then
+    print -u2 "Already on PR #$num ($oid)"
+    return
+  fi
+  for line in ${(f)"$(command git for-each-ref --format='%(objectname) %(refname:short)' refs/heads)"}; do
+    [[ ${line%% *} == $oid ]] && at+=(${line#* })
+  done
+  if (( $#at )); then
+    name=${at[(r)$head]:-$at[1]}
+    _git_jump_to_worktree $name && return
+    command git switch $name
+    return
+  fi
+  for name in $head pr-$num pr-$num-${oid[1,7]}; do
+    command git show-ref -q --verify refs/heads/$name || break
+  done
+  gh pr checkout $1 --branch $name
+}
+
+# cd into the worktree holding branch $1, unless it is already the current one.
+_git_jump_to_worktree() {
+  _git_worktree_of $1 && [[ -d $REPLY ]] &&
+    [[ $(command git symbolic-ref -q --short HEAD) != $1 ]] || return 1
+  print -u2 "Switched to worktree '$REPLY'"
+  cd $REPLY
+}
+
 git() {
   local REPLY
   case "$1:$2" in
@@ -80,13 +132,13 @@ git() {
       _git_worktree_of $3 && print -r -- $REPLY
       return ;;
     checkout:[^-]*|switch:[^-]*)
-      # Only a bare `git checkout <branch>`; flags, paths and `-` go straight to git.
-      if (( $# == 2 )) && _git_worktree_of $2 && [[ -d $REPLY ]] &&
-         [[ $(command git symbolic-ref -q --short HEAD) != $2 ]]; then
-        print -u2 "Switched to worktree '$REPLY'"
-        cd $REPLY
+      # Only a bare `git checkout <branch|pr>`; flags, paths and `-` go straight to git.
+      (( $# == 2 )) || { command git "$@"; return }
+      if _git_pr_of $2; then
+        _git_pr_checkout $REPLY
         return
-      fi ;;
+      fi
+      _git_jump_to_worktree $2 && return ;;
   esac
   command git "$@"
 }
