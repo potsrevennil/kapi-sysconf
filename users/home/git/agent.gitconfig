@@ -1,0 +1,39 @@
+# Git config for AI agent sessions: everything from the normal config, with output trimmed
+# for token cost. Claude Code selects it via GIT_CONFIG_GLOBAL in ~/.claude/settings.json;
+# interactive shells never read it.
+#
+# home-manager links a Nix store copy to ~/.config/git-agent/config (users/home.nix), so it
+# exists whatever branch the main checkout is on, and `git config --global` from an agent
+# fails instead of editing this tracked file. Edits take effect after `make home`.
+#
+# GIT_CONFIG_GLOBAL replaces both global files, so include both (a missing one is skipped).
+[include]
+	path = ~/.config/git/config
+	path = ~/.gitconfig
+
+# Short status with the branch line, instead of the long form with hint paragraphs.
+[status]
+	short = true
+	branch = true
+
+# Hint paragraphs written for people learning git.
+[advice]
+	statusHints = false
+	detachedHead = false
+	addEmptyPathspec = false
+	commitBeforeMerge = false
+	resolveConflict = false
+	skippedCherryPicks = false
+	pushUpdateRejected = false
+	setUpstreamFailure = false
+	forceDeleteBranch = false
+	defaultBranchName = false
+
+[fetch]
+	output = compact
+
+[merge]
+	stat = false
+
+# No pager, color or delta overrides: agents' output is never a TTY, so git already skips
+# them.

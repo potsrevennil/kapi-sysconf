@@ -124,6 +124,8 @@
 
   xdg.configFile = {
     "git".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/git";
+    # A store copy, not out-of-store: see the header of the file.
+    "git-agent/config".source = ./home/git/agent.gitconfig;
     "nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/kapi-vim";
   } // pkgs.lib.optionalAttrs (! lite) {
     "wezterm".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/wezterm";
