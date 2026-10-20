@@ -1,0 +1,32 @@
+# Git config for AI agent sessions: everything from the normal config, with output trimmed
+# for token cost. Claude Code selects it via GIT_CONFIG_GLOBAL in ~/.claude/settings.json;
+# interactive shells never read it.
+[include]
+	path = ~/.config/git/config
+
+# Short status with the branch line, instead of the long form with hint paragraphs.
+[status]
+	short = true
+	branch = true
+
+# Hint paragraphs written for people learning git.
+[advice]
+	statusHints = false
+	detachedHead = false
+	addEmptyPathspec = false
+	commitBeforeMerge = false
+	resolveConflict = false
+	skippedCherryPicks = false
+
+[fetch]
+	output = compact
+
+[merge]
+	stat = false
+
+# Agents read raw output: no pager (delta), no color codes.
+[core]
+	pager = cat
+
+[color]
+	ui = never
