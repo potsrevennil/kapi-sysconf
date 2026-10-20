@@ -49,9 +49,9 @@ _fzf_comprun() {
 }
 
 # Keep `#` literal (nixpkgs#hello, `gco #47`): zsh-utils' completion plugin turns on
-# EXTENDED_GLOB, which makes `#` a glob operator; this keeps the rest (^, ~) but also
-# drops the `(#i)`-style glob flags.
-disable -p '#'
+# EXTENDED_GLOB globally, which makes `#` a glob operator. Code that needs it (completion,
+# p10k, fast-syntax-highlighting) sets it locally, so turning it back off is safe.
+unsetopt extended_glob
 
 # alias
 alias ls="ls --color"
@@ -69,8 +69,10 @@ alias fman="compgen -c | fzf | xargs man"
 #                                   local branch whose tip it is, else on a new branch from
 #                                   `gh pr checkout`
 # A linked worktree that already holds the branch is detached (same commit) to free it,
-# but only if it has no uncommitted changes. Anything not naming a local or remote branch
-# (commits, tags, paths, `-`, other flags) goes straight to git.
+# but only if it has no uncommitted changes to tracked files; the current worktree's own
+# branch stays put. Anything not naming a local or remote branch (commits, tags, paths,
+# `-`, other flags) goes straight to git, as does everything under Claude Code
+# ($CLAUDECODE), whose agents expect plain git in their worktrees.
 # Sets REPLY to the worktree of branch $1; one `git worktree list`, parsed in-shell.
 _git_worktree_of() {
   local line wt
@@ -107,10 +109,14 @@ _git_pr_of() {
   esac
 }
 
-# Whether $1 is a local branch, or a remote one `git switch` would create it from.
+# Whether $1 is a local branch, or <remote>/$1 exists for `git switch` to create it from.
 _git_is_branch() {
-  command git show-ref -q --verify refs/heads/$1 2>/dev/null ||
-    [[ -n $(command git for-each-ref --count=1 "refs/remotes/*/$1" 2>/dev/null) ]]
+  local remote
+  command git show-ref -q --verify refs/heads/$1 2>/dev/null && return
+  for remote in ${(f)"$(command git remote 2>/dev/null)"}; do
+    command git show-ref -q --verify refs/remotes/$remote/$1 && return
+  done
+  return 1
 }
 
 # cd to worktree $1 unless already in it.
@@ -121,12 +127,17 @@ _git_enter() {
 }
 
 # Run `git $2 $3` in worktree $1 and cd there. If another worktree holds branch $3, detach
-# it first (refusing when it is dirty), and reattach it if the switch fails.
+# it first (refusing when tracked files are modified), and reattach it if the switch fails;
+# if the current worktree holds it, stay.
 _git_switch_in() {
   local dir=$1 cmd=$2 branch=$3 holder
   _git_worktree_of $branch && holder=$REPLY
+  if [[ -n $holder && ${holder:A} == ${$(command git rev-parse --show-toplevel 2>/dev/null):A} ]]; then
+    print -u2 "Already on '$branch'"
+    return
+  fi
   if [[ -n $holder && ${holder:A} != ${dir:A} ]]; then
-    if [[ -n $(command git -C $holder status --porcelain 2>/dev/null) ]]; then
+    if [[ -n $(command git -C $holder status --porcelain --untracked-files=no 2>/dev/null) ]]; then
       print -u2 "'$branch' is checked out in '$holder', which has uncommitted changes; leaving it"
       return 1
     fi
@@ -171,6 +182,7 @@ _git_pr_checkout() {
 }
 
 git() {
+  [[ -n $CLAUDECODE ]] && { command git "$@"; return }
   local REPLY dir here
   if [[ $1 == (checkout|switch) ]] && (( $@[(I)-.] )); then
     here=1
