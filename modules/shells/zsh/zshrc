@@ -48,8 +48,10 @@ _fzf_comprun() {
   esac
 }
 
-# fix catch command not found when executing nix command with "#"
-# setopt noglob
+# Keep `#` literal (nixpkgs#hello, `gco #47`): zsh-utils' completion plugin turns on
+# EXTENDED_GLOB, which makes `#` a glob operator; this keeps the rest (^, ~) but also
+# drops the `(#i)`-style glob flags.
+disable -p '#'
 
 # alias
 alias ls="ls --color"
