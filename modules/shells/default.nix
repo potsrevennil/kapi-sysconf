@@ -30,7 +30,6 @@ let cfg = config.modules.shells; in
           expireDuplicatesFirst = true;
           ignoreAllDups = true;
         };
-        antidote.enable = true;
         initContent =
           let
             initExtra = ''
