@@ -30,8 +30,11 @@
     inherit stateVersion;
 
     packages = builtins.attrValues {
+      # No enable_haskell (kapi-vim defaults it off): HLS must match each
+      # project's GHC, and nixpkgs' dynamically linked HLS drags a ~9 GiB
+      # closure that every nixpkgs bump re-downloads. Haskell projects
+      # provide ghc + HLS from their own flake devShell via direnv instead.
       kapi-vim = pkgs.kapi-vim.override {
-        enable_haskell = ! lite;
         enable_lean = ! lite;
         enable_typst = ! lite;
         enable_config = ! lite;
