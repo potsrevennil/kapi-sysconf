@@ -1,15 +1,12 @@
-# Git config for AI agent sessions: everything from the normal config, with output trimmed
-# for token cost. Claude Code selects it via GIT_CONFIG_GLOBAL in ~/.claude/settings.json;
-# interactive shells never read it.
+# Git config for AI agent sessions: output trimmed for token cost, layered over the normal
+# config. Claude Code includes it from ~/.claude/settings.json:
 #
-# home-manager links a Nix store copy to ~/.config/git-agent/config (users/home.nix), so it
-# exists whatever branch the main checkout is on, and `git config --global` from an agent
-# fails instead of editing this tracked file. Edits take effect after `make home`.
+#   "env": {"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "include.path",
+#           "GIT_CONFIG_VALUE_0": "~/.config/git/agent.gitconfig"}
 #
-# GIT_CONFIG_GLOBAL replaces both global files, so include both (a missing one is skipped).
-[include]
-	path = ~/.config/git/config
-	path = ~/.gitconfig
+# An include, not GIT_CONFIG_GLOBAL: the normal global config still loads, a missing file
+# (an older branch checked out) is skipped instead of dropping identity, and
+# `git config --global` writes the normal config as usual. Interactive shells never read it.
 
 # Short status with the branch line, instead of the long form with hint paragraphs.
 [status]
