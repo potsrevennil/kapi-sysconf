@@ -31,15 +31,16 @@
 
     packages = builtins.attrValues {
       # Only the editor-wide toggles, and only to turn them off for lite.
-      # Language toolchains (python, c, rust, go, js, haskell, lean) stay at
+      # Language toolchains (python, c, rust, go, haskell, lean) stay at
       # kapi-vim's default (off): each project brings its own matching
-      # servers from its flake devShell via direnv. Installing them globally
-      # was mostly redundant, and HLS alone is a ~9 GiB closure that every
-      # nixpkgs bump re-downloads.
+      # servers and formatters from its flake devShell via direnv.
+      # Installing them globally was mostly redundant, and HLS alone is a
+      # ~9 GiB closure that every nixpkgs bump re-downloads.
       kapi-vim = pkgs.kapi-vim.override {
         enable_config = ! lite;
         enable_shell = ! lite;
         enable_typst = ! lite;
+        enable_js = ! lite;
       };
 
       inherit (pkgs)
