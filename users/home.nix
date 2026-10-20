@@ -30,20 +30,16 @@
     inherit stateVersion;
 
     packages = builtins.attrValues {
-      # No enable_haskell (kapi-vim defaults it off): HLS must match each
-      # project's GHC, and nixpkgs' dynamically linked HLS drags a ~9 GiB
-      # closure that every nixpkgs bump re-downloads. Haskell projects
-      # provide ghc + HLS from their own flake devShell via direnv instead.
+      # Only the editor-wide toggles, and only to turn them off for lite.
+      # Language toolchains (python, c, rust, go, js, haskell, lean) stay at
+      # kapi-vim's default (off): each project brings its own matching
+      # servers from its flake devShell via direnv. Installing them globally
+      # was mostly redundant, and HLS alone is a ~9 GiB closure that every
+      # nixpkgs bump re-downloads.
       kapi-vim = pkgs.kapi-vim.override {
-        enable_lean = ! lite;
-        enable_typst = ! lite;
         enable_config = ! lite;
-        enable_python = ! lite;
         enable_shell = ! lite;
-        enable_c = ! lite;
-        enable_rust = ! lite;
-        enable_go = ! lite;
-        enable_js = ! lite;
+        enable_typst = ! lite;
       };
 
       inherit (pkgs)
