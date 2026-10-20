@@ -48,8 +48,10 @@ _fzf_comprun() {
   esac
 }
 
-# fix catch command not found when executing nix command with "#"
-# setopt noglob
+# Keep `#` literal (nixpkgs#hello, `gco #47`): zsh-utils' completion plugin turns on
+# EXTENDED_GLOB globally, which makes `#` a glob operator. Code that needs it (completion,
+# p10k, fast-syntax-highlighting) sets it locally, so turning it back off is safe.
+unsetopt extended_glob
 
 # alias
 alias ls="ls --color"
@@ -57,34 +59,169 @@ alias fman="compgen -c | fzf | xargs man"
 
 # Worktree-aware git (zsh only: git has no hook for new `worktree` subcommands or for
 # changing `checkout`/`switch`, and a git alias cannot cd the shell).
-#   git worktree path <branch>   print the worktree that has <branch> checked out
-#   git checkout|switch <branch> cd into that worktree instead of failing with
-#                                "already used by worktree"; also covers omz gco/gsw
-# Sets REPLY to the worktree of branch $1; one `git worktree list`, parsed in-shell.
-_git_worktree_of() {
-  local line wt
+#   git worktree path <branch>      print the worktree that has <branch> checked out
+#   git checkout|switch <branch>    switch the main checkout to <branch> and cd there, from
+#                                   any worktree; also covers omz gco/gsw
+#   git checkout|switch <branch> -. the same, in the current worktree instead (`-.` may
+#                                   also come first; git itself rejects it, so it is safe)
+#   git checkout|switch <pr> [-.]   with gh: #123, a PR URL, or a bare number that is not a
+#                                   rev or path; lands on the PR's exact head commit, on the
+#                                   local branch whose tip it is, else on a new branch from
+#                                   `gh pr checkout`
+# A linked worktree that already holds the branch is detached (same commit) to free it,
+# but only if it has no uncommitted changes to tracked files; the current worktree's own
+# branch stays put. Anything not naming a local or remote branch (commits, tags, paths,
+# `-`, other flags) goes straight to git, as does everything under Claude Code
+# ($CLAUDECODE), whose agents expect plain git in their worktrees.
+# Fills the caller's `wt` (branch -> worktree) and `main` (the main checkout, empty in a
+# bare repo) from one `git worktree list`, and `top` (the current worktree).
+_git_scan() {
+  local line p first=1
   for line in ${(f)"$(command git worktree list --porcelain 2>/dev/null)"}; do
     case $line in
-      'worktree '*) wt=${line#worktree } ;;
-      "branch refs/heads/$1") REPLY=$wt; return 0 ;;
+      'worktree '*) p=${line#worktree }; (( first )) && main=$p; first=0 ;;
+      bare) [[ $p == $main ]] && main= ;;
+      'branch refs/heads/'*) wt[${line#branch refs/heads/}]=$p ;;
     esac
+  done
+  top=$(command git rev-parse --show-toplevel 2>/dev/null)
+  [[ -n $top ]]
+}
+
+# Sets REPLY to the gh PR selector named by $1, if gh is installed. Returns 2 for a PR URL
+# of a repo none of this repo's remotes point at.
+_git_pr_of() {
+  (( $+commands[gh] )) || return 1
+  local slug url
+  case $1 in
+    '#'<->) REPLY=${1#\#} ;;
+    https://*/pull/<->|https://*/pull/<->/*)
+      slug=${(L)${${1#https://*/}%%/pull/*}}
+      for url in ${(f)"$(command git remote -v 2>/dev/null)"}; do
+        url=${(L)${${url#*$'\t'}% \(*\)}%.git}
+        [[ $url == *[:/]$slug ]] && { REPLY=$1; return 0 }
+      done
+      print -u2 "$1 is not a PR of this repo"
+      return 2 ;;
+    <->) [[ ! -e $1 ]] && ! command git rev-parse -q --verify "$1^{commit}" >/dev/null || return 1
+         REPLY=$1 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Whether $1 is a local branch, or <remote>/$1 exists for `git switch` to create it from.
+_git_is_branch() {
+  local ref
+  for ref in ${(f)"$(command git for-each-ref --format='%(refname)' refs/heads/$1 "refs/remotes/*/$1" 2>/dev/null)"}; do
+    [[ $ref == refs/heads/$1 ]] && return
+    ref=${ref#refs/remotes/}
+    [[ $ref == ${ref%%/*}/$1 ]] && return
   done
   return 1
 }
 
+# cd to worktree $1 unless already in it.
+_git_enter() {
+  [[ ${1:A} == ${top:A} ]] && return
+  print -u2 "Switched to worktree '$1'"
+  cd $1
+}
+
+# Run `git $2 $3` in worktree $1 and cd there. If another worktree holds branch $3, detach
+# it first (refusing when tracked files are modified), and reattach it if the switch fails;
+# if the current worktree holds it, stay.
+_git_switch_in() {
+  local dir=$1 cmd=$2 branch=$3 holder=$wt[$3]
+  if [[ -n $holder && ${holder:A} == ${top:A} ]]; then
+    print -u2 "Already on '$branch'"
+    return
+  fi
+  if [[ -n $holder && ${holder:A} != ${dir:A} ]]; then
+    if [[ -n $(command git -C $holder status --porcelain --untracked-files=no 2>/dev/null) ]]; then
+      print -u2 "'$branch' is checked out in '$holder', which has uncommitted changes; leaving it"
+      return 1
+    fi
+    command git -C $holder switch -q --detach || return
+    print -u2 "Detached '$holder' to free '$branch'"
+    if ! command git -C $dir $cmd $branch; then
+      command git -C $holder switch -q $branch && print -u2 "Reattached '$holder' to '$branch'"
+      return 1
+    fi
+  elif [[ -z $holder ]]; then
+    command git -C $dir $cmd $branch || return
+  fi
+  _git_enter $dir
+}
+
+# Land worktree $1 on PR $3's exact head commit, via `git $2`: stay if its HEAD is already
+# there, else switch to the local branch whose tip it is (the PR's branch name first); with
+# no such branch, `gh pr checkout` into a new branch that does not clobber one.
+_git_pr_checkout() {
+  local dir=$1 cmd=$2 out line name
+  local -a pr at
+  out=$(gh pr view $3 --json number,headRefOid,headRefName -q '.number, .headRefOid, .headRefName') || return
+  pr=("${(@f)out}")
+  if (( $#pr != 3 )) || [[ -z $pr[1] || -z $pr[2] || -z $pr[3] ]]; then
+    print -u2 "gh pr view $3: incomplete PR info (number, head commit, head branch)"
+    return 1
+  fi
+  local num=$pr[1] oid=$pr[2] head=$pr[3]
+  if [[ $(command git -C $dir rev-parse -q --verify HEAD) == $oid ]]; then
+    print -u2 "Already on PR #$num ($oid)"
+    _git_enter $dir
+    return
+  fi
+  for line in ${(f)"$(command git for-each-ref --format='%(objectname) %(refname:short)' refs/heads)"}; do
+    [[ ${line%% *} == $oid ]] && at+=(${line#* })
+  done
+  if (( $#at )); then
+    _git_switch_in $dir $cmd ${at[(r)$head]:-$at[1]}
+    return
+  fi
+  for line in $head pr-$num pr-$num-${oid[1,7]}; do
+    command git show-ref -q --verify refs/heads/$line || { name=$line; break }
+  done
+  if [[ -z $name ]]; then
+    print -u2 "PR #$num: branches $head, pr-$num and pr-$num-${oid[1,7]} all exist but none is at $oid"
+    return 1
+  fi
+  ( builtin cd -q $dir && gh pr checkout $3 --branch $name ) && _git_enter $dir
+}
+
 git() {
-  local REPLY
+  # Fast path: everything but checkout/switch/worktree, and anything under Claude Code.
+  [[ -n $CLAUDECODE || $1 != (checkout|switch|worktree) ]] && { command git "$@"; return }
+  local REPLY dir here top main
+  local -A wt
+  if [[ $1 == (checkout|switch) ]]; then
+    # `-.` counts only before `--`; after it, it is a path.
+    local -i dd=$@[(i)--]
+    local -a pre=("${(@)@[1,dd-1]}")
+    if (( $pre[(I)-.] )); then
+      here=1
+      set -- "${(@)pre:#-.}" "${(@)@[dd,-1]}"
+    fi
+  fi
   case "$1:$2" in
     worktree:path)
       (( $# == 3 )) || { print -u2 'usage: git worktree path <branch>'; return 129 }
-      _git_worktree_of $3 && print -r -- $REPLY
+      _git_scan
+      [[ -n $wt[$3] ]] && print -r -- $wt[$3]
       return ;;
     checkout:[^-]*|switch:[^-]*)
-      # Only a bare `git checkout <branch>`; flags, paths and `-` go straight to git.
-      if (( $# == 2 )) && _git_worktree_of $2 && [[ -d $REPLY ]] &&
-         [[ $(command git symbolic-ref -q --short HEAD) != $2 ]]; then
-        print -u2 "Switched to worktree '$REPLY'"
-        cd $REPLY
+      # Only a bare `git checkout <branch|pr> [-.]`; anything else goes straight to git.
+      (( $# == 2 )) || { command git "$@"; return }
+      _git_pr_of $2
+      case $? in
+        0) _git_scan || { command git "$@"; return }
+           (( here )) && dir=$top || dir=${main:-$top}
+           _git_pr_checkout $dir $1 $REPLY
+           return ;;
+        2) return 1 ;;
+      esac
+      if _git_is_branch $2 && _git_scan; then
+        (( here )) && dir=$top || dir=${main:-$top}
+        _git_switch_in $dir $1 $2
         return
       fi ;;
   esac
