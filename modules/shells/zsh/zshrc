@@ -69,10 +69,14 @@ alias fman="compgen -c | fzf | xargs man"
 #                                   rev or path; lands on the PR's exact head commit, on the
 #                                   local branch whose tip it is, else on a new branch from
 #                                   `gh pr checkout`
+#   git checkout|switch --vanilla … plain git, minus `--vanilla` (also rejected by git itself)
 # With `-.`, a worktree that already holds the branch is detached (same commit) to free it,
-# but only if it has no uncommitted changes to tracked files. Anything not naming a local or remote branch (commits, tags, paths,
-# `-`, other flags) goes straight to git, as does everything under Claude Code
-# ($CLAUDECODE), whose agents expect plain git in their worktrees.
+# but only if it has no uncommitted changes to tracked files. Flags that only change how a
+# switch runs (-q, -m, -f, --track, --guess, --recurse-submodules, …) are passed on to the
+# switch the wrapper runs, and dropped when it only cds. Anything else not naming a local or
+# remote branch (commits, tags, paths, `-`, -b/-c/--detach and other flags) goes straight to
+# git, as does everything under Claude Code ($CLAUDECODE), whose agents expect plain git in
+# their worktrees.
 # Fills the caller's `wt` (branch -> worktree) and `main` (the main checkout, empty in a
 # bare repo) from one `git worktree list`, and `top` (the current worktree).
 _git_scan() {
@@ -148,12 +152,12 @@ _git_switch_in() {
     fi
     command git -C $holder switch -q --detach || return
     print -u2 "Detached '$holder' to free '$branch'"
-    if ! command git -C $dir $cmd $branch; then
+    if ! command git -C $dir $cmd "${(@)opts}" $branch; then
       command git -C $holder switch -q $branch && print -u2 "Reattached '$holder' to '$branch'"
       return 1
     fi
   elif [[ -z $holder ]]; then
-    command git -C $dir $cmd $branch || return
+    command git -C $dir $cmd "${(@)opts}" $branch || return
   fi
   _git_enter $dir
 }
@@ -196,16 +200,34 @@ _git_pr_checkout() {
 git() {
   # Fast path: everything but checkout/switch/worktree, and anything under Claude Code.
   [[ -n $CLAUDECODE || $1 != (checkout|switch|worktree) ]] && { command git "$@"; return }
-  local REPLY dir here top main
+  local REPLY dir here top main a
+  local -a plain=("$@") opts pre post rest
   local -A wt
   if [[ $1 == (checkout|switch) ]]; then
-    # `-.` counts only before `--`; after it, it is a path.
+    # Our flags count only before `--`; after it, they are paths.
     local -i dd=$@[(i)--]
-    local -a pre=("${(@)@[1,dd-1]}")
+    pre=("${(@)@[1,dd-1]}") post=("${(@)@[dd,-1]}")
+    if (( $pre[(I)--vanilla] )); then
+      command git "${(@)pre:#--vanilla}" "${(@)post}"
+      return
+    fi
     if (( $pre[(I)-.] )); then
       here=1
-      set -- "${(@)pre:#-.}" "${(@)@[dd,-1]}"
+      pre=("${(@)pre:#-.}")
     fi
+    # Whatever happens, git never sees `-.`.
+    plain=("${(@)pre}" "${(@)post}")
+    # Set aside flags that only change how a switch runs; `opts` reaches the switch below.
+    rest=($pre[1])
+    for a in "${(@)pre[2,-1]}"; do
+      case $a in
+        -q|--quiet|--progress|--no-progress|-m|--merge|-f|--force|--discard-changes|\
+        -t|--track|--track=*|--no-track|--guess|--no-guess|\
+        --recurse-submodules|--recurse-submodules=*|--no-recurse-submodules) opts+=($a) ;;
+        *) rest+=($a) ;;
+      esac
+    done
+    set -- "${(@)rest}" "${(@)post}"
   fi
   case "$1:$2" in
     worktree:path)
@@ -214,11 +236,11 @@ git() {
       [[ -n $wt[$3] ]] && print -r -- $wt[$3]
       return ;;
     checkout:[^-]*|switch:[^-]*)
-      # Only a bare `git checkout <branch|pr> [-.]`; anything else goes straight to git.
-      (( $# == 2 )) || { command git "$@"; return }
+      # Only `git checkout <branch|pr>` plus our flags; anything else goes straight to git.
+      (( $# == 2 )) || { command git "${(@)plain}"; return }
       _git_pr_of $2
       case $? in
-        0) _git_scan || { command git "$@"; return }
+        0) _git_scan || { command git "${(@)plain}"; return }
            (( here )) && dir=$top || dir=${main:-$top}
            _git_pr_checkout $dir $1 $REPLY
            return ;;
@@ -230,5 +252,5 @@ git() {
         return
       fi ;;
   esac
-  command git "$@"
+  command git "${(@)plain}"
 }
