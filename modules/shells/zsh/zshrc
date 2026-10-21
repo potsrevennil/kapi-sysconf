@@ -60,17 +60,17 @@ alias fman="compgen -c | fzf | xargs man"
 # Worktree-aware git (zsh only: git has no hook for new `worktree` subcommands or for
 # changing `checkout`/`switch`, and a git alias cannot cd the shell).
 #   git worktree path <branch>      print the worktree that has <branch> checked out
-#   git checkout|switch <branch>    switch the main checkout to <branch> and cd there, from
-#                                   any worktree; also covers omz gco/gsw
-#   git checkout|switch <branch> -. the same, in the current worktree instead (`-.` may
-#                                   also come first; git itself rejects it, so it is safe)
+#   git checkout|switch <branch>    cd into the worktree that has <branch> checked out; if
+#                                   none has, switch the main checkout to it and cd there,
+#                                   from any worktree; also covers omz gco/gsw
+#   git checkout|switch <branch> -. switch the current worktree instead (`-.` may also come
+#                                   first; git itself rejects it, so it is safe)
 #   git checkout|switch <pr> [-.]   with gh: #123, a PR URL, or a bare number that is not a
 #                                   rev or path; lands on the PR's exact head commit, on the
 #                                   local branch whose tip it is, else on a new branch from
 #                                   `gh pr checkout`
-# A linked worktree that already holds the branch is detached (same commit) to free it,
-# but only if it has no uncommitted changes to tracked files; the current worktree's own
-# branch stays put. Anything not naming a local or remote branch (commits, tags, paths,
+# With `-.`, a worktree that already holds the branch is detached (same commit) to free it,
+# but only if it has no uncommitted changes to tracked files. Anything not naming a local or remote branch (commits, tags, paths,
 # `-`, other flags) goes straight to git, as does everything under Claude Code
 # ($CLAUDECODE), whose agents expect plain git in their worktrees.
 # Fills the caller's `wt` (branch -> worktree) and `main` (the main checkout, empty in a
@@ -127,13 +127,18 @@ _git_enter() {
   cd $1
 }
 
-# Run `git $2 $3` in worktree $1 and cd there. If another worktree holds branch $3, detach
-# it first (refusing when tracked files are modified), and reattach it if the switch fails;
-# if the current worktree holds it, stay.
+# Run `git $2 $3` in worktree $1 and cd there. If the current worktree holds branch $3, stay;
+# if another one does, cd there instead, unless `-.` (the caller's `here`) asked for this
+# one: then detach the holder first (refusing when tracked files are modified), and
+# reattach it if the switch fails.
 _git_switch_in() {
   local dir=$1 cmd=$2 branch=$3 holder=$wt[$3]
   if [[ -n $holder && ${holder:A} == ${top:A} ]]; then
     print -u2 "Already on '$branch'"
+    return
+  fi
+  if [[ -n $holder ]] && (( ! here )); then
+    _git_enter $holder
     return
   fi
   if [[ -n $holder && ${holder:A} != ${dir:A} ]]; then
